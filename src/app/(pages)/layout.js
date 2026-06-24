@@ -9,10 +9,6 @@ import TrackVisitor from "@/components/utils/TrackVisitor"
 import StoreProvider from "./StoreProvider"
 import { ToastContainer } from "react-toastify"
 
-export const metadata = {
-  title: "WhatsLocal",
-  description: "Experience the Pulse of Your Neighborhood",
-}
 
 export default function PagesLayout({ children }) {
   return (
