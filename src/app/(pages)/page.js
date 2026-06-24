@@ -4,69 +4,13 @@ import axios from "axios"
 import clsx from "clsx"
 import { useEffect, useState, useCallback } from "react"
 import { dateString } from "@/lib/utils/dateString"
-import { LuCalendar, LuSearch, LuX } from "react-icons/lu"
+import { LuCalendar, LuSearch, LuX, LuMapPin } from "react-icons/lu"
 import Image from "next/image"
 import Link from "next/link"
-import { HiOutlineLocationMarker } from "react-icons/hi"
-import { CgDetailsLess } from "react-icons/cg"
-import { TiStarFullOutline, TiStarOutline } from "react-icons/ti"
-import { useAppDispatch, useAppSelector } from "@/lib/store/hooks"
-import { setNavigationIds } from "@/lib/store/slices/navigationSlice"
 import { FiArrowUpRight } from "react-icons/fi"
 import useDebounce from "@/lib/hooks/useDebounce"
-
-const DIET_FILTERS = [
-  { label: "Veg", value: "veg", className: "border-green-700/50 text-green-400" },
-  { label: "Non-Veg", value: "non-veg", className: "border-red-700/50 text-red-400" },
-]
-const COST_FILTERS = [
-  { label: "Under ₹200", value: 200 },
-  { label: "Under ₹500", value: 500 },
-]
-
-function StarRating({ rating, size = 14 }) {
-  if (!rating) return null
-  return (
-    <div className="flex items-center gap-0.5">
-      {[1, 2, 3, 4, 5].map((n) =>
-        n <= Math.round(rating) ? (
-          <TiStarFullOutline key={n} size={size} className="text-yellow-400" />
-        ) : (
-          <TiStarOutline key={n} size={size} className="opacity-40" />
-        )
-      )}
-      <span className="text-xs opacity-60 ml-1">{rating.toFixed(1)}</span>
-    </div>
-  )
-}
-
-function FoodBadges({ food }) {
-  if (!food) return null
-  return (
-    <div className="flex flex-wrap gap-1 mt-2">
-      {food.dietType && (
-        <span
-          className={clsx(
-            "text-xs px-2 py-0.5 rounded-full border",
-            food.dietType === "veg" ? "border-green-700/50 text-green-400" : "border-red-700/50 text-red-400"
-          )}
-        >
-          {food.dietType === "veg" ? "🟢 Veg" : "🔴 Non-Veg"}
-        </span>
-      )}
-      {food.cuisines?.[0] && (
-        <span className="text-xs px-2 py-0.5 rounded-full border border-secondary-border opacity-70">
-          {food.cuisines[0]}
-        </span>
-      )}
-      {food.priceRange?.avgCostForTwo && (
-        <span className="text-xs px-2 py-0.5 rounded-full border border-secondary-border opacity-70">
-          ₹{food.priceRange.avgCostForTwo} for 2
-        </span>
-      )}
-    </div>
-  )
-}
+import { useAppDispatch, useAppSelector } from "@/lib/store/hooks"
+import { setNavigationIds } from "@/lib/store/slices/navigationSlice"
 
 export default function Page() {
   const [loading, setLoading] = useState(true)
@@ -74,16 +18,14 @@ export default function Page() {
   const [listings, setListings] = useState([])
   const [selectedCategory, setSelectedCategory] = useState()
   const [searchQuery, setSearchQuery] = useState("")
-  const [dietFilter, setDietFilter] = useState(null)
-  const [costFilter, setCostFilter] = useState(null)
   const [searchResults, setSearchResults] = useState(null)
   const [searchLoading, setSearchLoading] = useState(false)
+  const [dynamicInfoText, setDynamicInfoText] = useState()
   const dispatch = useAppDispatch()
   const navigationState = useAppSelector((state) => state.navigation)
-  const [dynamicInfoText, setDynamicInfoText] = useState()
 
   const debouncedQuery = useDebounce(searchQuery, 400)
-  const isSearchActive = !!(debouncedQuery || dietFilter || costFilter)
+  const isSearchActive = !!debouncedQuery
 
   const scrollIntoView = (id, options) => {
     let timerId
@@ -105,10 +47,8 @@ export default function Page() {
         block: "nearest",
         inline: "center",
       })
-
       const response = await axios.get(`/api/listing/sub_categories/${_id}`)
       setListings(response.data)
-
       if (isManualCall) setSelectedCategory(categories.find((i) => i._id === _id))
       else if (navigationState.subCategory) {
         for (const subCat of response.data) {
@@ -130,15 +70,13 @@ export default function Page() {
     try {
       const params = new URLSearchParams()
       if (debouncedQuery) params.set("q", debouncedQuery)
-      if (dietFilter) params.set("dietType", dietFilter)
-      if (costFilter) params.set("maxCost", costFilter)
       const { data } = await axios.get(`/api/listing/search?${params}`)
       setSearchResults(data)
     } catch (err) {
       console.error(err)
     }
     setSearchLoading(false)
-  }, [debouncedQuery, dietFilter, costFilter, isSearchActive])
+  }, [debouncedQuery, isSearchActive])
 
   useEffect(() => { runSearch() }, [runSearch])
 
@@ -168,13 +106,6 @@ export default function Page() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const clearSearch = () => {
-    setSearchQuery("")
-    setDietFilter(null)
-    setCostFilter(null)
-    setSearchResults(null)
-  }
-
   return (
     <div>
       {dynamicInfoText && (
@@ -184,77 +115,50 @@ export default function Page() {
       )}
 
       {/* Search bar */}
-      <div className="px-hr mt-3 mb-2">
-        <div className="flex items-center gap-2 bg-secondary border border-border rounded-xl px-3 py-2">
+      <div className="px-hr mt-4 mb-3">
+        <div className="flex items-center gap-2 bg-secondary border border-border rounded-xl px-3 py-2.5">
           <LuSearch size={18} className="opacity-40 shrink-0" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search restaurants, cuisines..."
+            placeholder="Search businesses, events, places..."
             className="flex-1 bg-transparent text-sm outline-none placeholder:opacity-40"
           />
-          {(searchQuery || dietFilter || costFilter) && (
-            <button onClick={clearSearch}>
+          {searchQuery && (
+            <button onClick={() => { setSearchQuery(""); setSearchResults(null) }}>
               <LuX size={16} className="opacity-40" />
             </button>
           )}
         </div>
-
-        {/* Quick filter chips */}
-        <div className="no-scrollbar flex gap-2 mt-2 overflow-auto whitespace-nowrap pb-1">
-          {DIET_FILTERS.map((f) => (
-            <button
-              key={f.value}
-              onClick={() => setDietFilter(dietFilter === f.value ? null : f.value)}
-              className={clsx(
-                "text-xs px-3 py-1.5 rounded-full border transition-colors",
-                dietFilter === f.value ? f.className + " bg-secondary" : "border-secondary-border opacity-60"
-              )}
-            >
-              {f.label}
-            </button>
-          ))}
-          {COST_FILTERS.map((f) => (
-            <button
-              key={f.value}
-              onClick={() => setCostFilter(costFilter === f.value ? null : f.value)}
-              className={clsx(
-                "text-xs px-3 py-1.5 rounded-full border transition-colors",
-                costFilter === f.value ? "border-accent bg-secondary font-semibold" : "border-secondary-border opacity-60"
-              )}
-            >
-              {f.label}
-            </button>
-          ))}
-        </div>
       </div>
 
-      {/* Category tabs — hidden when search active */}
+      {/* Category tabs */}
       {!isSearchActive && (
         <div className="px-hr mt-1 mb-4 no-scrollbar flex gap-2 items-center overflow-auto whitespace-nowrap">
           {categories?.length > 0 ? (
-            categories.map((i) => (
+            categories.map((cat) => (
               <button
-                key={i._id}
-                id={i._id}
+                key={cat._id}
+                id={cat._id}
+                onClick={() => fetchListings(cat._id)}
                 className={clsx(
-                  "rounded-full border border-secondary-border py-2 px-3 font-medium",
-                  selectedCategory && selectedCategory._id === i._id ? "bg-primary text-secondary" : "bg-secondary"
+                  "rounded-full border py-2 px-4 text-sm font-medium transition-colors",
+                  selectedCategory?._id === cat._id
+                    ? "bg-primary text-secondary border-primary"
+                    : "bg-secondary border-secondary-border"
                 )}
-                onClick={() => fetchListings(i._id)}
               >
-                {i.title}
+                {cat.icon && <span className="mr-1.5">{cat.icon}</span>}
+                {cat.title}
               </button>
             ))
           ) : (
-            <>
-              {[0, 1, 2].map((n) => (
-                <span key={n} className="bg-secondary rounded-full py-2 px-3 text-base">
-                  <span className="block h-6 w-[4.5em]" />
-                </span>
-              ))}
-            </>
+            [0, 1, 2, 3].map((n) => (
+              <span key={n} className="bg-secondary rounded-full py-2 px-4 border border-secondary-border">
+                <span className="block h-5 w-16 opacity-0">·</span>
+              </span>
+            ))
           )}
         </div>
       )}
@@ -269,14 +173,14 @@ export default function Page() {
               ))}
             </div>
           ) : searchResults?.length === 0 ? (
-            <p className="text-center opacity-50 py-10">No restaurants found. Try a different search.</p>
+            <p className="text-center opacity-50 py-10">No results found. Try a different search.</p>
           ) : (
             <>
-              <p className="text-sm opacity-50 mb-3">{searchResults?.length} restaurant{searchResults?.length !== 1 ? "s" : ""} found</p>
+              <p className="text-sm opacity-50 mb-3">{searchResults?.length} result{searchResults?.length !== 1 ? "s" : ""}</p>
               <div className="grid grid-cols-2 gap-3">
                 {searchResults?.map((i) => (
                   <Link key={i._id} href={`/${i.category}/${i.subCategory}/${i.slug}`}>
-                    <ListingCard i={i} categorySlug={null} subCatSlug={null} />
+                    <ListingCard i={i} />
                   </Link>
                 ))}
               </div>
@@ -287,11 +191,13 @@ export default function Page() {
         <>
           {listings?.length > 0 ? (
             listings
-              ?.filter((subCat) => subCat?.listings?.length > 0)
-              ?.map((subCat) => (
-                <div key={subCat._id} id={subCat._id}>
-                  <span className="px-hr block mt-8 mb-6 font-bold text-xl">{subCat.title}</span>
-                  <div className="scroll-container flex gap-2 px-hr w-full">
+              .filter((subCat) => subCat?.listings?.length > 0)
+              .map((subCat) => (
+                <div key={subCat._id} id={subCat._id} className="mb-2">
+                  <div className="px-hr mt-8 mb-4 flex items-center justify-between">
+                    <span className="font-bold text-xl">{subCat.title}</span>
+                  </div>
+                  <div className="scroll-container flex gap-3 px-hr w-full">
                     {subCat.listings.map((i) => (
                       <Link
                         key={i._id}
@@ -306,13 +212,14 @@ export default function Page() {
                 </div>
               ))
           ) : (
-            <div className={clsx("transition-opacity ease-in-out duration-500", loading ? "opacity-100" : "opacity-0")}>
+            <div className={clsx("transition-opacity duration-500", loading ? "opacity-100" : "opacity-0")}>
               {[0, 1].map((n) => (
-                <div key={n} className="h-full">
-                  <span className="mt-8 mb-6 block w-3/5 h-[1.4rem] bg-secondary rounded-full mx-hr" />
-                  <div className="flex gap-2 px-hr overflow-auto w-full">
-                    <div className="listing-card aspect-[3/5] bg-secondary h-full flex flex-col shrink-0 text-secondary-foreground rounded-3xl overflow-hidden" />
-                    <div className="listing-card aspect-[3/5] bg-secondary h-full flex flex-col shrink-0 text-secondary-foreground rounded-3xl overflow-hidden" />
+                <div key={n}>
+                  <span className="mt-8 mb-4 block w-2/5 h-6 bg-secondary rounded-full mx-hr" />
+                  <div className="flex gap-3 px-hr overflow-hidden">
+                    {[0, 1].map((m) => (
+                      <div key={m} className="listing-card aspect-[3/4] bg-secondary rounded-2xl shrink-0 animate-pulse" />
+                    ))}
                   </div>
                 </div>
               ))}
@@ -320,7 +227,10 @@ export default function Page() {
           )}
 
           {selectedCategory?.connectButton && (
-            <Link href={selectedCategory.connectButton.url} className="my-8 flex gap-1 items-center justify-center underline opacity-60">
+            <Link
+              href={selectedCategory.connectButton.url}
+              className="my-8 flex gap-1 items-center justify-center underline opacity-60"
+            >
               <span>{selectedCategory.connectButton.text}</span>
               <FiArrowUpRight className="size-4" />
             </Link>
@@ -333,46 +243,34 @@ export default function Page() {
 
 function ListingCard({ i }) {
   return (
-    <div className="listing-card bg-secondary text-secondary-foreground h-full flex flex-col rounded-xl overflow-hidden drop-shadow-xl shadow-black border border-border">
-      <div className="border-[4px] border-transparent relative">
+    <div className="listing-card bg-secondary text-secondary-foreground h-full flex flex-col rounded-2xl overflow-hidden border border-border shadow-sm">
+      <div className="relative">
         <Image
           src={i.thumbnail}
-          alt="thumbnail"
-          className="object-cover aspect-[4/5] rounded-[8.5px]"
+          alt={i.title}
+          className="object-cover aspect-[4/3] w-full"
           width={400}
-          height={400 * (1 + 1 / 5)}
+          height={300}
         />
-        {i.food?.isFeatured && (
-          <span className="absolute top-2 right-2 bg-yellow-400/90 text-black text-xs font-bold px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
-            <TiStarFullOutline size={11} /> Featured
-          </span>
-        )}
       </div>
-      <div className="pt-3 pb-3 px-3">
-        <div className="line-clamp-2">
-          <span>{i.title}</span>
-        </div>
-        <div className="mt-2 space-y-2 text-sm">
+      <div className="p-3 flex flex-col gap-1.5 flex-1">
+        <span className="font-semibold text-sm line-clamp-2 leading-snug">{i.title}</span>
+        <div className="space-y-1 text-xs opacity-60">
           {i?.date && (
-            <div className="flex items-center gap-3">
-              <LuCalendar size={20} className="shrink-0 opacity-50" />
-              <span className="font-light block truncate">{dateString(i?.date, i?.time, true)}</span>
+            <div className="flex items-center gap-1.5">
+              <LuCalendar size={13} className="shrink-0" />
+              <span className="truncate">{dateString(i?.date, i?.time, true)}</span>
             </div>
           )}
           {i.location?.address && (
-            <div className="flex items-center gap-3 truncate">
-              <HiOutlineLocationMarker size={20} className="shrink-0 opacity-50" />
-              <span className="font-light">{i.location.address}</span>
+            <div className="flex items-center gap-1.5">
+              <LuMapPin size={13} className="shrink-0" />
+              <span className="truncate">{i.location.address}</span>
             </div>
           )}
-          {!i?.date && i.about?.length && !i.food ? (
-            <div className="flex gap-3">
-              <CgDetailsLess size={20} className="shrink-0 opacity-50" />
-              <p className="font-light line-clamp-2">{i.about}</p>
-            </div>
-          ) : null}
-          {i.food?.rating > 0 && <StarRating rating={i.food.rating} />}
-          <FoodBadges food={i.food} />
+          {!i?.date && !i.location?.address && i.about?.length > 0 && (
+            <p className="line-clamp-2 leading-snug">{i.about}</p>
+          )}
         </div>
       </div>
     </div>
