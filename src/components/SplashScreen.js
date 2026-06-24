@@ -5,54 +5,60 @@ import { useRouter } from "next/navigation"
 
 export default function SplashScreen() {
   const router = useRouter()
-  const [visible, setVisible] = useState(true)
-  const [fadeOut, setFadeOut] = useState(false)
+  const [phase, setPhase] = useState("enter") // enter → hold → exit
 
   useEffect(() => {
-    const fadeTimer = setTimeout(() => setFadeOut(true), 2000)
-    const navTimer = setTimeout(() => {
-      router.replace("/home")
-    }, 2500)
-    return () => { clearTimeout(fadeTimer); clearTimeout(navTimer) }
+    const holdTimer  = setTimeout(() => setPhase("hold"), 100)
+    const exitTimer  = setTimeout(() => setPhase("exit"), 2400)
+    const navTimer   = setTimeout(() => router.replace("/home"), 3000)
+    return () => { clearTimeout(holdTimer); clearTimeout(exitTimer); clearTimeout(navTimer) }
   }, [router])
-
-  if (!visible) return null
 
   return (
     <div
-      className={`fixed inset-0 z-50 flex flex-col items-center justify-center transition-opacity duration-500 ${fadeOut ? "opacity-0" : "opacity-100"}`}
+      className="fixed inset-0 z-50 flex flex-col items-center justify-center"
       style={{ background: "hsl(240 10% 3.9%)" }}
     >
-      {/* Logo mark */}
-      <div className="flex flex-col items-center gap-5 mb-16">
-        <div className="relative flex items-center justify-center w-24 h-24 rounded-3xl bg-white/5 border border-white/10 shadow-2xl">
-          <span className="text-5xl font-black text-white tracking-tight leading-none select-none">W</span>
-          <span
-            className="absolute -bottom-1.5 -right-1.5 w-5 h-5 rounded-full border-2 border-background"
-            style={{ background: "hsl(142 71% 45%)" }}
-          />
-        </div>
-        <div className="text-center">
-          <h1 className="text-3xl font-black text-white tracking-tight">WhatsLocal</h1>
-          <p className="text-sm text-white/40 mt-1 font-medium">Experience the Pulse of Your Neighborhood</p>
-        </div>
+      {/* Text block */}
+      <div
+        className="text-center px-8 transition-all duration-700 ease-out"
+        style={{
+          opacity:   phase === "hold" ? 1 : 0,
+          transform: phase === "hold" ? "translateY(0)" : phase === "enter" ? "translateY(24px)" : "translateY(-16px)",
+        }}
+      >
+        <p
+          className="text-white font-semibold tracking-wide"
+          style={{ fontSize: "clamp(1.1rem, 5vw, 1.4rem)", opacity: 0.7 }}
+        >
+          Hello Gondia,
+        </p>
+        <p
+          className="text-white font-black leading-none mt-1"
+          style={{ fontSize: "clamp(2.4rem, 11vw, 3.2rem)", letterSpacing: "-0.02em" }}
+        >
+          Let's order.
+        </p>
       </div>
 
-      {/* Bottom loader */}
-      <div className="absolute bottom-14 flex flex-col items-center gap-3">
-        <div className="w-36 h-0.5 rounded-full bg-white/10 overflow-hidden">
-          <div
-            className="h-full rounded-full bg-white/70"
-            style={{ animation: "splash-progress 2s ease-in-out forwards" }}
+      {/* Bottom dot loader */}
+      <div
+        className="absolute bottom-16 flex gap-2 transition-opacity duration-500"
+        style={{ opacity: phase === "hold" ? 1 : 0 }}
+      >
+        {[0, 1, 2].map((n) => (
+          <span
+            key={n}
+            className="w-1.5 h-1.5 rounded-full bg-white/40"
+            style={{ animation: `dot-bounce 1.2s ${n * 0.2}s ease-in-out infinite` }}
           />
-        </div>
-        <span className="text-xs text-white/30 font-medium tracking-widest uppercase">Loading</span>
+        ))}
       </div>
 
       <style>{`
-        @keyframes splash-progress {
-          from { width: 0% }
-          to   { width: 100% }
+        @keyframes dot-bounce {
+          0%, 80%, 100% { transform: scale(1); opacity: 0.4; }
+          40%            { transform: scale(1.5); opacity: 1; }
         }
       `}</style>
     </div>
