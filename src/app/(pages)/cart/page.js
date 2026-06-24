@@ -4,10 +4,10 @@ import { useEffect, useState } from "react"
 import axios from "axios"
 import { useAppDispatch, useAppSelector } from "@/lib/store/hooks"
 import {
-  selectCartItems, selectCartTotal, selectCartCount,
-  addItem, removeItem, clearCart,
+  selectRestaurants, selectCartTotal, selectCartCount,
+  addItem, removeItem, clearRestaurant, clearCart,
 } from "@/lib/store/slices/cartSlice"
-import { LuShoppingCart, LuPlus, LuMinus, LuTrash2, LuPhone } from "react-icons/lu"
+import { LuShoppingCart, LuPlus, LuMinus, LuTrash2, LuPhone, LuChevronRight } from "react-icons/lu"
 import { RiWhatsappLine } from "react-icons/ri"
 
 function buildWhatsAppMessage(restaurantName, items, total) {
@@ -23,71 +23,67 @@ function buildWhatsAppMessage(restaurantName, items, total) {
   ].join("\n")
 }
 
-export default function CartPage() {
+function RestaurantGroup({ group, listing }) {
   const dispatch = useAppDispatch()
-  const items = useAppSelector(selectCartItems)
-  const total = useAppSelector(selectCartTotal)
-  const count = useAppSelector(selectCartCount)
-  const restaurantSlug = useAppSelector(s => s.cart.restaurantSlug)
+  const { slug, name, items } = group
 
-  const [restaurant, setRestaurant] = useState(null)
+  const subtotal = items.reduce((s, i) => s + i.price * i.qty, 0)
+  const count = items.reduce((s, i) => s + i.qty, 0)
 
-  useEffect(() => {
-    if (!restaurantSlug) return
-    axios.get(`/api/listing/${restaurantSlug}`)
-      .then(r => setRestaurant(r.data))
-      .catch(() => {})
-  }, [restaurantSlug])
-
-  // Derive contact from DB listing or fall back to a placeholder
-  const restaurantName = restaurant?.title || "Dhaba Junction"
-  const whatsappNumber = restaurant?.actionLinks?.whatsapp
-    || restaurant?.actionLinks?.mobileNumber
-    || "919876543210"   // placeholder — update via seed script or admin
-  const callNumber = restaurant?.actionLinks?.mobileNumber
-    || restaurant?.actionLinks?.whatsapp
-    || "+919876543210"
+  const restaurantName = listing?.title || name
+  const whatsappNumber = (
+    listing?.actionLinks?.whatsapp ||
+    listing?.actionLinks?.mobileNumber ||
+    "919876543210"
+  ).replace(/\D/g, "")
+  const callNumber = listing?.actionLinks?.mobileNumber ||
+    listing?.actionLinks?.whatsapp || "+919876543210"
 
   const handleWhatsApp = () => {
-    const msg = encodeURIComponent(buildWhatsAppMessage(restaurantName, items, total))
-    window.open(`https://wa.me/${whatsappNumber.replace(/\D/g, "")}?text=${msg}`, "_blank")
+    const msg = encodeURIComponent(buildWhatsAppMessage(restaurantName, items, subtotal))
+    window.open(`https://wa.me/${whatsappNumber}?text=${msg}`, "_blank")
   }
-
   const handleCall = () => { window.location.href = `tel:${callNumber}` }
 
-  if (items.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-3 opacity-40">
-        <LuShoppingCart size={40} strokeWidth={1.2} />
-        <p className="text-lg font-medium">Your cart is empty</p>
-      </div>
-    )
-  }
-
   return (
-    <div className="px-hr pb-8">
-      <h1 className="text-xl font-bold mt-6 mb-1">Your Cart</h1>
-      <p className="text-sm opacity-40 mb-4">{restaurantName}</p>
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden mb-4">
+      {/* Restaurant header */}
+      <div className="flex items-center justify-between px-4 py-3 bg-gray-50 border-b border-gray-100">
+        <div>
+          <p className="font-bold text-sm text-gray-900">{restaurantName}</p>
+          <p className="text-xs text-gray-400 mt-0.5">{count} item{count !== 1 ? "s" : ""}</p>
+        </div>
+        <button
+          onClick={() => dispatch(clearRestaurant(slug))}
+          className="text-xs text-red-400 flex items-center gap-1"
+        >
+          <LuTrash2 size={12} /> Remove
+        </button>
+      </div>
 
-      <div className="space-y-3">
-        {items.map((item) => (
-          <div key={item.id} className="flex items-center gap-3 bg-secondary rounded-xl px-4 py-3 border border-border">
+      {/* Items */}
+      <div className="divide-y divide-gray-50 px-4">
+        {items.map(item => (
+          <div key={item.id} className="flex items-center gap-3 py-3">
             <div className="flex-1 min-w-0">
-              <p className="font-semibold text-sm truncate">{item.name}</p>
-              <p className="text-xs opacity-50 mt-0.5">₹{item.price} each</p>
+              <p className="font-semibold text-sm text-gray-900 truncate">{item.name}</p>
+              <p className="text-xs text-gray-400 mt-0.5">₹{item.price} each</p>
             </div>
             <div className="flex items-center gap-2 shrink-0">
               <button
-                onClick={() => dispatch(removeItem(item.id))}
-                className="w-7 h-7 rounded-full border border-border flex items-center justify-center"
+                onClick={() => dispatch(removeItem({ restaurantSlug: slug, id: item.id }))}
+                className="w-7 h-7 rounded-full border border-gray-200 flex items-center justify-center"
               >
                 <LuMinus size={12} strokeWidth={3} />
               </button>
               <span className="w-5 text-center font-bold text-sm">{item.qty}</span>
               <button
-                onClick={() => dispatch(addItem({ id: item.id, name: item.name, price: item.price,
-                  category: item.category, dietType: item.dietType, restaurantSlug: item.restaurantSlug }))}
-                className="w-7 h-7 rounded-full border border-border flex items-center justify-center"
+                onClick={() => dispatch(addItem({
+                  restaurantSlug: slug, restaurantName: name,
+                  id: item.id, name: item.name, price: item.price,
+                  category: item.category, dietType: item.dietType,
+                }))}
+                className="w-7 h-7 rounded-full border border-gray-200 flex items-center justify-center"
               >
                 <LuPlus size={12} strokeWidth={3} />
               </button>
@@ -99,50 +95,98 @@ export default function CartPage() {
         ))}
       </div>
 
-      {/* Bill summary */}
-      <div className="mt-6 bg-secondary rounded-xl border border-border px-4 py-4 space-y-2">
-        <div className="flex justify-between text-sm opacity-60">
-          <span>Subtotal ({count} item{count !== 1 ? "s" : ""})</span>
-          <span>₹{total}</span>
+      {/* Subtotal + order buttons */}
+      <div className="px-4 pt-3 pb-4 border-t border-gray-100 bg-gray-50/50">
+        <div className="flex justify-between text-sm mb-3">
+          <span className="text-gray-500">Subtotal</span>
+          <span className="font-bold text-gray-900">₹{subtotal}</span>
         </div>
-        <div className="flex justify-between font-bold text-base pt-2 border-t border-border">
-          <span>Total</span>
-          <span>₹{total}</span>
+
+        {/* Message preview */}
+        <div className="bg-[#075e54]/8 border border-[#075e54]/15 rounded-xl px-3 py-2 mb-3">
+          <p className="text-xs font-semibold text-[#075e54] mb-1 opacity-70">Order message preview</p>
+          <pre className="text-xs text-gray-500 whitespace-pre-wrap font-sans leading-relaxed">
+            {buildWhatsAppMessage(restaurantName, items, subtotal)}
+          </pre>
+        </div>
+
+        {/* Action buttons */}
+        <div className="flex gap-2">
+          <button
+            onClick={handleWhatsApp}
+            className="flex-1 flex items-center justify-center gap-2 bg-[#25D366] text-white font-bold py-3 rounded-xl text-sm"
+          >
+            <RiWhatsappLine size={18} />
+            Order on WhatsApp
+          </button>
+          <button
+            onClick={handleCall}
+            className="flex items-center justify-center gap-2 bg-white border border-gray-200 font-bold py-3 px-4 rounded-xl text-sm"
+          >
+            <LuPhone size={16} />
+            Call
+          </button>
         </div>
       </div>
+    </div>
+  )
+}
 
-      {/* WhatsApp message preview */}
-      <div className="mt-4 bg-[#075e54]/10 border border-[#075e54]/20 rounded-xl px-4 py-3">
-        <p className="text-xs font-semibold text-[#075e54] mb-1 opacity-80">Order message preview</p>
-        <pre className="text-xs opacity-60 whitespace-pre-wrap font-sans leading-relaxed">
-          {buildWhatsAppMessage(restaurantName, items, total)}
-        </pre>
+export default function CartPage() {
+  const restaurants = useAppSelector(selectRestaurants)
+  const total = useAppSelector(selectCartTotal)
+  const count = useAppSelector(selectCartCount)
+  const dispatch = useAppDispatch()
+
+  const [listings, setListings] = useState({})
+
+  useEffect(() => {
+    restaurants.forEach(r => {
+      if (listings[r.slug]) return
+      axios.get(`/api/listing/${r.slug}`)
+        .then(res => setListings(prev => ({ ...prev, [r.slug]: res.data })))
+        .catch(() => {})
+    })
+  }, [restaurants])
+
+  if (restaurants.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-3 text-gray-400">
+        <LuShoppingCart size={40} strokeWidth={1.2} />
+        <p className="text-lg font-medium">Your cart is empty</p>
+        <p className="text-sm">Add items from a restaurant to get started</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="px-4 pb-28 pt-4 bg-gray-50 min-h-screen">
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <h1 className="text-xl font-bold text-gray-900">Your Cart</h1>
+          <p className="text-xs text-gray-400 mt-0.5">
+            {count} item{count !== 1 ? "s" : ""} · {restaurants.length} restaurant{restaurants.length !== 1 ? "s" : ""}
+          </p>
+        </div>
+        <button
+          onClick={() => dispatch(clearCart())}
+          className="text-xs text-red-400 flex items-center gap-1"
+        >
+          <LuTrash2 size={12} /> Clear all
+        </button>
       </div>
 
-      {/* Place order buttons */}
-      <div className="mt-5 flex gap-3">
-        <button
-          onClick={handleWhatsApp}
-          className="flex-1 flex items-center justify-center gap-2 bg-[#25D366] text-white font-bold py-4 rounded-2xl text-sm"
-        >
-          <RiWhatsappLine size={20} />
-          Order on WhatsApp
-        </button>
-        <button
-          onClick={handleCall}
-          className="flex items-center justify-center gap-2 bg-secondary border border-border font-bold py-4 px-5 rounded-2xl text-sm"
-        >
-          <LuPhone size={18} />
-          Call
-        </button>
-      </div>
+      {restaurants.map(group => (
+        <RestaurantGroup key={group.slug} group={group} listing={listings[group.slug]} />
+      ))}
 
-      <button
-        onClick={() => dispatch(clearCart())}
-        className="mt-5 flex items-center gap-2 text-sm opacity-40 mx-auto"
-      >
-        <LuTrash2 size={14} /> Clear cart
-      </button>
+      {/* Grand total */}
+      {restaurants.length > 1 && (
+        <div className="bg-white rounded-2xl border border-gray-100 px-4 py-4 flex justify-between items-center">
+          <span className="font-semibold text-gray-700">Grand Total</span>
+          <span className="font-black text-lg text-gray-900">₹{total}</span>
+        </div>
+      )}
     </div>
   )
 }

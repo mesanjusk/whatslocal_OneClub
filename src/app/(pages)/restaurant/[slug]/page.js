@@ -148,14 +148,24 @@ function DietDot({ type }) {
   )
 }
 
-function AddButton({ item, slug }) {
+function AddButton({ item, slug, restaurantName }) {
   const dispatch = useAppDispatch()
-  const qty = useAppSelector(selectItemQty(item._id))
+  const qty = useAppSelector(selectItemQty(slug, item._id))
+
+  const add = () => dispatch(addItem({
+    restaurantSlug: slug,
+    restaurantName: restaurantName || slug,
+    id: item._id,
+    name: item.name,
+    price: item.price,
+    category: item.category,
+    dietType: item.dietType,
+  }))
+  const remove = () => dispatch(removeItem({ restaurantSlug: slug, id: item._id }))
 
   if (qty === 0) return (
     <motion.button whileTap={{ scale: 0.93 }}
-      onClick={() => dispatch(addItem({ id: item._id, name: item.name, price: item.price,
-        category: item.category, dietType: item.dietType, restaurantSlug: slug }))}
+      onClick={add}
       style={{ background: "#fff", border: "1.5px solid #e23744", borderRadius: 8,
         color: "#e23744", fontWeight: 700, fontSize: 13, padding: "6px 22px",
         letterSpacing: "0.05em", cursor: "pointer", whiteSpace: "nowrap" }}>
@@ -166,15 +176,14 @@ function AddButton({ item, slug }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 2, background: "#e23744",
       borderRadius: 8, overflow: "hidden" }}>
-      <button onClick={() => dispatch(removeItem(item._id))}
+      <button onClick={remove}
         style={{ background: "none", border: "none", color: "#fff", padding: "6px 10px",
           cursor: "pointer", display: "flex", alignItems: "center" }}>
         <LuMinus size={13} strokeWidth={3} />
       </button>
       <span style={{ color: "#fff", fontWeight: 700, fontSize: 14, minWidth: 16,
         textAlign: "center" }}>{qty}</span>
-      <button onClick={() => dispatch(addItem({ id: item._id, name: item.name, price: item.price,
-        category: item.category, dietType: item.dietType, restaurantSlug: slug }))}
+      <button onClick={add}
         style={{ background: "none", border: "none", color: "#fff", padding: "6px 10px",
           cursor: "pointer", display: "flex", alignItems: "center" }}>
         <LuPlus size={13} strokeWidth={3} />
@@ -183,7 +192,7 @@ function AddButton({ item, slug }) {
   )
 }
 
-function MenuItem({ item, slug }) {
+function MenuItem({ item, slug, restaurantName }) {
   return (
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start",
       padding: "14px 0", borderBottom: "1px solid #f3f3f3", gap: 12 }}>
@@ -202,7 +211,7 @@ function MenuItem({ item, slug }) {
         )}
       </div>
       <div style={{ flexShrink: 0, marginTop: 4 }}>
-        <AddButton item={item} slug={slug} />
+        <AddButton item={item} slug={slug} restaurantName={restaurantName} />
       </div>
     </div>
   )
@@ -357,7 +366,7 @@ export default function RestaurantPage() {
               {cat}
               <span style={{ fontSize: 12, color: "#93959f", fontWeight: 400 }}>({items.length})</span>
             </h2>
-            {items.map(item => <MenuItem key={item._id} item={item} slug={slug} />)}
+            {items.map(item => <MenuItem key={item._id} item={item} slug={slug} restaurantName={restaurantName} />)}
           </div>
         ))}
       </div>

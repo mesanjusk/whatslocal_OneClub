@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
+import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
 import {
   LuArrowRight, LuSparkles, LuPlus, LuMinus, LuTrophy,
@@ -83,9 +84,9 @@ function Badge({ label }) {
 }
 
 // ── Add-to-cart button ────────────────────────────────────────────────────────
-function AddToCartBtn({ item, restaurantSlug = "dhaba-junction", size = "md", primary = false }) {
+function AddToCartBtn({ item, restaurantSlug = "dhaba-junction", restaurantName, size = "md", primary = false }) {
   const dispatch = useAppDispatch()
-  const qty = useAppSelector(selectItemQty(item.id || item.restaurant))
+  const qty = useAppSelector(selectItemQty(restaurantSlug, item.id || item.restaurant))
   const [flashed, setFlashed] = useState(false)
 
   const handleAdd = (e) => {
@@ -97,6 +98,7 @@ function AddToCartBtn({ item, restaurantSlug = "dhaba-junction", size = "md", pr
       category: "Food",
       dietType: "veg",
       restaurantSlug,
+      restaurantName: restaurantName || item.restaurant || restaurantSlug,
     }))
     setFlashed(true)
     setTimeout(() => setFlashed(false), 1200)
@@ -211,7 +213,7 @@ function AIVerdict({ winner, query }) {
         <Stars rating={winner.rating} />
 
         {/* Primary CTA */}
-        <AddToCartBtn item={winner} primary size="lg" />
+        <AddToCartBtn item={winner} primary size="lg" restaurantSlug={winner.slug || "dhaba-junction"} restaurantName={winner.restaurant} />
       </div>
     </motion.div>
   )
@@ -272,14 +274,17 @@ function InsightsAccordion({ insights, cons }) {
 
 // ── Restaurant comparison card ────────────────────────────────────────────────
 function RestaurantCard({ item, isWinner, index }) {
+  const router = useRouter()
   return (
     <motion.div
       initial={{ opacity: 0, y: 18 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.1 + 0.15, duration: 0.38, ease: "easeOut" }}
       whileHover={{ y: -2, boxShadow: "0 8px 24px rgba(0,0,0,0.08)" }}
+      onClick={() => item.slug && router.push(`/restaurant/${item.slug}`)}
       className={clsx(
         "rounded-2xl border overflow-hidden bg-white transition-shadow",
+        item.slug ? "cursor-pointer" : "",
         isWinner ? "border-[#e23744]/25 shadow-md shadow-[#e23744]/8" : "border-gray-200 shadow-sm"
       )}
     >
@@ -326,7 +331,7 @@ function RestaurantCard({ item, isWinner, index }) {
 
         {/* Add button */}
         <div className="pb-3">
-          <AddToCartBtn item={item} />
+          <AddToCartBtn item={item} restaurantSlug={item.slug || "dhaba-junction"} restaurantName={item.restaurant} />
         </div>
       </div>
 

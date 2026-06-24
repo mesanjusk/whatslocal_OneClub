@@ -1,15 +1,28 @@
 import { createSlice } from "@reduxjs/toolkit"
 import { getWindow } from "@/lib/utils/getWindow"
 
+// State shape:
+// {
+//   restaurants: {
+//     [slug]: {
+//       slug: string,
+//       name: string,
+//       items: [{ id, name, price, qty, dietType, category }]
+//     }
+//   }
+// }
+
+const EMPTY = { restaurants: {} }
+
 const load = () => {
   try {
-    const raw = getWindow()?.localStorage?.getItem("cart")
-    return raw ? JSON.parse(raw) : { items: [], restaurantSlug: null }
-  } catch { return { items: [], restaurantSlug: null } }
+    const raw = getWindow()?.localStorage?.getItem("cart_v2")
+    return raw ? JSON.parse(raw) : EMPTY
+  } catch { return EMPTY }
 }
 
 const save = (state) => {
-  try { getWindow()?.localStorage?.setItem("cart", JSON.stringify(state)) } catch {}
+  try { getWindow()?.localStorage?.setItem("cart_v2", JSON.stringify(state)) } catch {}
 }
 
 const cartSlice = createSlice({
@@ -17,36 +30,58 @@ const cartSlice = createSlice({
   initialState: load(),
   reducers: {
     addItem(state, { payload }) {
-      // Clear cart if switching restaurant
-      if (state.restaurantSlug && state.restaurantSlug !== payload.restaurantSlug) {
-        state.items = []
+      // payload: { restaurantSlug, restaurantName, id, name, price, qty?, dietType, category }
+      const { restaurantSlug, restaurantName, id, ...itemData } = payload
+      if (!state.restaurants[restaurantSlug]) {
+        state.restaurants[restaurantSlug] = { slug: restaurantSlug, name: restaurantName, items: [] }
       }
-      state.restaurantSlug = payload.restaurantSlug
-      const existing = state.items.find(i => i.id === payload.id)
-      if (existing) { existing.qty += 1 }
-      else { state.items.push({ ...payload, qty: 1 }) }
+      const rest = state.restaurants[restaurantSlug]
+      const existing = rest.items.find(i => i.id === id)
+      if (existing) {
+        existing.qty += 1
+      } else {
+        rest.items.push({ id, qty: 1, ...itemData })
+      }
       save(state)
     },
-    removeItem(state, { payload: id }) {
-      const existing = state.items.find(i => i.id === id)
-      if (!existing) return
-      if (existing.qty > 1) { existing.qty -= 1 }
-      else { state.items = state.items.filter(i => i.id !== id) }
+    removeItem(state, { payload: { restaurantSlug, id } }) {
+      const rest = state.restaurants[restaurantSlug]
+      if (!rest) return
+      const item = rest.items.find(i => i.id === id)
+      if (!item) return
+      if (item.qty > 1) {
+        item.qty -= 1
+      } else {
+        rest.items = rest.items.filter(i => i.id !== id)
+        if (rest.items.length === 0) delete state.restaurants[restaurantSlug]
+      }
+      save(state)
+    },
+    clearRestaurant(state, { payload: slug }) {
+      delete state.restaurants[slug]
       save(state)
     },
     clearCart(state) {
-      state.items = []
-      state.restaurantSlug = null
+      state.restaurants = {}
       save(state)
     },
   },
 })
 
-export const { addItem, removeItem, clearCart } = cartSlice.actions
+export const { addItem, removeItem, clearRestaurant, clearCart } = cartSlice.actions
 
-export const selectCartItems = (s) => s.cart.items
-export const selectCartTotal = (s) => s.cart.items.reduce((sum, i) => sum + i.price * i.qty, 0)
-export const selectCartCount = (s) => s.cart.items.reduce((sum, i) => sum + i.qty, 0)
-export const selectItemQty = (id) => (s) => s.cart.items.find(i => i.id === id)?.qty ?? 0
+// ── Selectors ─────────────────────────────────────────────────────────────────
+export const selectRestaurants    = (s) => Object.values(s.cart.restaurants)
+export const selectCartTotal      = (s) =>
+  Object.values(s.cart.restaurants).flatMap(r => r.items).reduce((sum, i) => sum + i.price * i.qty, 0)
+export const selectCartCount      = (s) =>
+  Object.values(s.cart.restaurants).flatMap(r => r.items).reduce((sum, i) => sum + i.qty, 0)
+export const selectItemQty = (restaurantSlug, id) => (s) =>
+  s.cart.restaurants[restaurantSlug]?.items.find(i => i.id === id)?.qty ?? 0
+// Legacy flat selector kept for restaurant menu page
+export const selectCartItems = (s) =>
+  Object.values(s.cart.restaurants).flatMap(r =>
+    r.items.map(item => ({ ...item, restaurantSlug: r.slug, restaurantName: r.name }))
+  )
 
 export default cartSlice.reducer
