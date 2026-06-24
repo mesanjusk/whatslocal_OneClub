@@ -1,5 +1,7 @@
 "use client"
 
+import { useEffect, useState } from "react"
+import axios from "axios"
 import { useAppDispatch, useAppSelector } from "@/lib/store/hooks"
 import {
   selectCartItems, selectCartTotal, selectCartCount,
@@ -8,17 +10,10 @@ import {
 import { LuShoppingCart, LuPlus, LuMinus, LuTrash2, LuPhone } from "react-icons/lu"
 import { RiWhatsappLine } from "react-icons/ri"
 
-// ── Restaurant contact — update with real numbers ─────────────────────────────
-const RESTAURANT = {
-  name: "Dhaba Junction",
-  phone: "919876543210",      // replace with actual number (91 + 10-digit)
-  callNumber: "+919876543210", // replace with actual number
-}
-
-function buildWhatsAppMessage(items, total) {
+function buildWhatsAppMessage(restaurantName, items, total) {
   const lines = items.map(i => `• ${i.name} x${i.qty}  ₹${i.price * i.qty}`)
   return [
-    `🍽️ *New Order — ${RESTAURANT.name}*`,
+    `🍽️ *New Order — ${restaurantName}*`,
     "",
     ...lines,
     "",
@@ -33,15 +28,32 @@ export default function CartPage() {
   const items = useAppSelector(selectCartItems)
   const total = useAppSelector(selectCartTotal)
   const count = useAppSelector(selectCartCount)
+  const restaurantSlug = useAppSelector(s => s.cart.restaurantSlug)
+
+  const [restaurant, setRestaurant] = useState(null)
+
+  useEffect(() => {
+    if (!restaurantSlug) return
+    axios.get(`/api/listing/${restaurantSlug}`)
+      .then(r => setRestaurant(r.data))
+      .catch(() => {})
+  }, [restaurantSlug])
+
+  // Derive contact from DB listing or fall back to a placeholder
+  const restaurantName = restaurant?.title || "Dhaba Junction"
+  const whatsappNumber = restaurant?.actionLinks?.whatsapp
+    || restaurant?.actionLinks?.mobileNumber
+    || "919876543210"   // placeholder — update via seed script or admin
+  const callNumber = restaurant?.actionLinks?.mobileNumber
+    || restaurant?.actionLinks?.whatsapp
+    || "+919876543210"
 
   const handleWhatsApp = () => {
-    const msg = encodeURIComponent(buildWhatsAppMessage(items, total))
-    window.open(`https://wa.me/${RESTAURANT.phone}?text=${msg}`, "_blank")
+    const msg = encodeURIComponent(buildWhatsAppMessage(restaurantName, items, total))
+    window.open(`https://wa.me/${whatsappNumber.replace(/\D/g, "")}?text=${msg}`, "_blank")
   }
 
-  const handleCall = () => {
-    window.location.href = `tel:${RESTAURANT.callNumber}`
-  }
+  const handleCall = () => { window.location.href = `tel:${callNumber}` }
 
   if (items.length === 0) {
     return (
@@ -55,7 +67,7 @@ export default function CartPage() {
   return (
     <div className="px-hr pb-8">
       <h1 className="text-xl font-bold mt-6 mb-1">Your Cart</h1>
-      <p className="text-sm opacity-40 mb-4">{RESTAURANT.name}</p>
+      <p className="text-sm opacity-40 mb-4">{restaurantName}</p>
 
       <div className="space-y-3">
         {items.map((item) => (
@@ -103,7 +115,7 @@ export default function CartPage() {
       <div className="mt-4 bg-[#075e54]/10 border border-[#075e54]/20 rounded-xl px-4 py-3">
         <p className="text-xs font-semibold text-[#075e54] mb-1 opacity-80">Order message preview</p>
         <pre className="text-xs opacity-60 whitespace-pre-wrap font-sans leading-relaxed">
-          {buildWhatsAppMessage(items, total)}
+          {buildWhatsAppMessage(restaurantName, items, total)}
         </pre>
       </div>
 

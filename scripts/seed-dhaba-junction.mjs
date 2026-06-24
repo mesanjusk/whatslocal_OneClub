@@ -239,8 +239,12 @@ async function main() {
         dietType: "veg",
         priceRange: { min: 15, max: 295, avgCostForTwo: 400 },
         isFeatured: true,
-        rating: 0,
+        rating: 4.2,
         reviewCount: 0,
+      },
+      actionLinks: {
+        mobileNumber: "+919876543210",  // ← replace with real number
+        whatsapp: "919876543210",        // ← replace with real number (no +)
       },
     })
     console.log("🍽️  Created listing: Dhaba Junction")

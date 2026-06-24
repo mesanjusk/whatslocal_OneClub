@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
+import axios from "axios"
 import { motion, AnimatePresence } from "framer-motion"
 import { LuArrowLeft, LuSearch, LuShoppingCart, LuMinus, LuPlus, LuX } from "react-icons/lu"
 import { useAppDispatch, useAppSelector } from "@/lib/store/hooks"
@@ -10,115 +11,133 @@ import {
   selectCartTotal, selectCartCount, selectItemQty,
 } from "@/lib/store/slices/cartSlice"
 
-// ── Full Dhaba Junction menu ──────────────────────────────────────────────────
-const MENU = [
-  // Soups
-  { _id: "s1",  category: "Soups",           dietType: "veg",     name: "Tomato Soup",               price: 60 },
-  { _id: "s2",  category: "Soups",           dietType: "veg",     name: "Sweet Corn Soup",           price: 70 },
-  { _id: "s3",  category: "Soups",           dietType: "veg",     name: "Hot & Sour Soup",           price: 70 },
-  { _id: "s4",  category: "Soups",           dietType: "veg",     name: "Manchow Soup",              price: 75 },
-  // Starters
-  { _id: "st1", category: "Starters",        dietType: "veg",     name: "Paneer Tikka",              price: 160, description: "Marinated paneer grilled in tandoor" },
-  { _id: "st2", category: "Starters",        dietType: "veg",     name: "Hara Bhara Kabab",          price: 120 },
-  { _id: "st3", category: "Starters",        dietType: "veg",     name: "Veg Seekh Kabab",           price: 130 },
-  { _id: "st4", category: "Starters",        dietType: "veg",     name: "Mushroom Tikka",            price: 150 },
-  { _id: "st5", category: "Starters",        dietType: "veg",     name: "Paneer Malai Tikka",        price: 170 },
-  { _id: "st6", category: "Starters",        dietType: "veg",     name: "Aloo Tikki",                price: 80 },
-  { _id: "st7", category: "Starters",        dietType: "non-veg", name: "Chicken Tikka",             price: 180, description: "Tandoor-grilled chicken pieces" },
-  { _id: "st8", category: "Starters",        dietType: "non-veg", name: "Chicken Seekh Kabab",       price: 190 },
-  { _id: "st9", category: "Starters",        dietType: "non-veg", name: "Tangdi Kabab",              price: 220 },
-  // Paneer
-  { _id: "p1",  category: "Paneer Dishes",   dietType: "veg",     name: "Paneer Butter Masala",      price: 180, description: "Rich tomato-butter gravy with soft paneer" },
-  { _id: "p2",  category: "Paneer Dishes",   dietType: "veg",     name: "Kadai Paneer",              price: 175, description: "Paneer with capsicum in kadai masala" },
-  { _id: "p3",  category: "Paneer Dishes",   dietType: "veg",     name: "Shahi Paneer",              price: 185 },
-  { _id: "p4",  category: "Paneer Dishes",   dietType: "veg",     name: "Matar Paneer",              price: 160 },
-  { _id: "p5",  category: "Paneer Dishes",   dietType: "veg",     name: "Palak Paneer",              price: 170 },
-  { _id: "p6",  category: "Paneer Dishes",   dietType: "veg",     name: "Paneer Do Pyaza",           price: 175 },
-  { _id: "p7",  category: "Paneer Dishes",   dietType: "veg",     name: "Paneer Lababdar",           price: 185 },
-  // Dal
-  { _id: "d1",  category: "Dal",             dietType: "veg",     name: "Dal Makhani",               price: 150, description: "Slow-cooked black lentils in buttery gravy" },
-  { _id: "d2",  category: "Dal",             dietType: "veg",     name: "Dal Tadka",                 price: 130 },
-  { _id: "d3",  category: "Dal",             dietType: "veg",     name: "Dal Fry",                   price: 120 },
-  { _id: "d4",  category: "Dal",             dietType: "veg",     name: "Dal Dhaba Style",           price: 140 },
-  // Veg Curries
-  { _id: "v1",  category: "Veg Curries",     dietType: "veg",     name: "Mix Veg",                   price: 150 },
-  { _id: "v2",  category: "Veg Curries",     dietType: "veg",     name: "Aloo Gobi",                 price: 130 },
-  { _id: "v3",  category: "Veg Curries",     dietType: "veg",     name: "Aloo Matar",                price: 130 },
-  { _id: "v4",  category: "Veg Curries",     dietType: "veg",     name: "Baingan Bharta",            price: 140 },
-  { _id: "v5",  category: "Veg Curries",     dietType: "veg",     name: "Chana Masala",              price: 140 },
-  { _id: "v6",  category: "Veg Curries",     dietType: "veg",     name: "Rajma Masala",              price: 145 },
-  { _id: "v7",  category: "Veg Curries",     dietType: "veg",     name: "Veg Kofta",                 price: 160 },
-  { _id: "v8",  category: "Veg Curries",     dietType: "veg",     name: "Mushroom Masala",           price: 165 },
-  // Chicken
-  { _id: "c1",  category: "Chicken",         dietType: "non-veg", name: "Butter Chicken",            price: 220, description: "Creamy tomato-based chicken curry" },
-  { _id: "c2",  category: "Chicken",         dietType: "non-veg", name: "Chicken Curry",             price: 200 },
-  { _id: "c3",  category: "Chicken",         dietType: "non-veg", name: "Kadai Chicken",             price: 215 },
-  { _id: "c4",  category: "Chicken",         dietType: "non-veg", name: "Chicken Do Pyaza",          price: 210 },
-  { _id: "c5",  category: "Chicken",         dietType: "non-veg", name: "Chicken Masala",            price: 210 },
-  { _id: "c6",  category: "Chicken",         dietType: "non-veg", name: "Dhaba Chicken",             price: 225, description: "Rustic dhaba-style spicy chicken" },
-  // Mutton
-  { _id: "m1",  category: "Mutton",          dietType: "non-veg", name: "Mutton Curry",              price: 280 },
-  { _id: "m2",  category: "Mutton",          dietType: "non-veg", name: "Mutton Rogan Josh",         price: 295, description: "Slow-cooked Kashmiri mutton" },
-  { _id: "m3",  category: "Mutton",          dietType: "non-veg", name: "Mutton Kadai",              price: 285 },
-  { _id: "m4",  category: "Mutton",          dietType: "non-veg", name: "Mutton Do Pyaza",           price: 285 },
-  // Breads
-  { _id: "b1",  category: "Breads",          dietType: "veg",     name: "Tandoori Roti",             price: 15 },
-  { _id: "b2",  category: "Breads",          dietType: "veg",     name: "Butter Roti",               price: 20 },
-  { _id: "b3",  category: "Breads",          dietType: "veg",     name: "Plain Naan",                price: 30 },
-  { _id: "b4",  category: "Breads",          dietType: "veg",     name: "Butter Naan",               price: 35 },
-  { _id: "b5",  category: "Breads",          dietType: "veg",     name: "Garlic Naan",               price: 40 },
-  { _id: "b6",  category: "Breads",          dietType: "veg",     name: "Stuffed Paratha",           price: 60, description: "Aloo, Gobhi or Paneer" },
-  { _id: "b7",  category: "Breads",          dietType: "veg",     name: "Lachha Paratha",            price: 45 },
-  { _id: "b8",  category: "Breads",          dietType: "veg",     name: "Puri (4 pcs)",              price: 40 },
-  // Rice & Biryani
-  { _id: "r1",  category: "Rice & Biryani",  dietType: "veg",     name: "Steamed Rice",              price: 60 },
-  { _id: "r2",  category: "Rice & Biryani",  dietType: "veg",     name: "Jeera Rice",                price: 80 },
-  { _id: "r3",  category: "Rice & Biryani",  dietType: "veg",     name: "Veg Biryani",               price: 150, description: "Fragrant basmati with mixed vegetables" },
-  { _id: "r4",  category: "Rice & Biryani",  dietType: "veg",     name: "Veg Pulao",                 price: 120 },
-  { _id: "r5",  category: "Rice & Biryani",  dietType: "non-veg", name: "Chicken Biryani",           price: 220, description: "Dum-cooked chicken biryani" },
-  { _id: "r6",  category: "Rice & Biryani",  dietType: "non-veg", name: "Mutton Biryani",            price: 280 },
-  // Chinese
-  { _id: "ch1", category: "Chinese",         dietType: "veg",     name: "Veg Fried Rice",            price: 120 },
-  { _id: "ch2", category: "Chinese",         dietType: "veg",     name: "Veg Hakka Noodles",         price: 120 },
-  { _id: "ch3", category: "Chinese",         dietType: "veg",     name: "Paneer Chilli (Dry)",       price: 160 },
-  { _id: "ch4", category: "Chinese",         dietType: "veg",     name: "Gobi Manchurian (Dry)",     price: 140 },
-  { _id: "ch5", category: "Chinese",         dietType: "veg",     name: "Gobi Manchurian (Gravy)",   price: 145 },
-  { _id: "ch6", category: "Chinese",         dietType: "non-veg", name: "Chicken Fried Rice",        price: 160 },
-  { _id: "ch7", category: "Chinese",         dietType: "non-veg", name: "Chicken Chilli (Dry)",      price: 180 },
-  { _id: "ch8", category: "Chinese",         dietType: "non-veg", name: "Chicken Hakka Noodles",     price: 160 },
-  // Thali
-  { _id: "th1", category: "Thali",           dietType: "veg",     name: "Veg Thali (Small)",         price: 120, description: "Dal, sabzi, roti, rice, salad" },
-  { _id: "th2", category: "Thali",           dietType: "veg",     name: "Veg Thali (Full)",          price: 180, description: "Dal, 2 sabzi, paneer, roti, rice, salad, sweet" },
-  { _id: "th3", category: "Thali",           dietType: "veg",     name: "Dhaba Special Thali",       price: 220, description: "Chef's special full thali" },
-  { _id: "th4", category: "Thali",           dietType: "non-veg", name: "Non-Veg Thali",             price: 260, description: "Chicken curry, dal, roti, rice, salad" },
-  // Raita & Salad
-  { _id: "ra1", category: "Raita & Salad",   dietType: "veg",     name: "Plain Raita",               price: 40 },
-  { _id: "ra2", category: "Raita & Salad",   dietType: "veg",     name: "Boondi Raita",              price: 50 },
-  { _id: "ra3", category: "Raita & Salad",   dietType: "veg",     name: "Green Salad",               price: 50 },
-  { _id: "ra4", category: "Raita & Salad",   dietType: "veg",     name: "Onion Salad",               price: 30 },
-  // Desserts
-  { _id: "de1", category: "Desserts",        dietType: "veg",     name: "Gulab Jamun (2 pcs)",       price: 60 },
-  { _id: "de2", category: "Desserts",        dietType: "veg",     name: "Rasgulla (2 pcs)",          price: 60 },
-  { _id: "de3", category: "Desserts",        dietType: "veg",     name: "Kheer",                     price: 70 },
-  { _id: "de4", category: "Desserts",        dietType: "veg",     name: "Ice Cream",                 price: 80, description: "Vanilla / Chocolate / Strawberry" },
-  // Beverages
-  { _id: "bv1", category: "Beverages",       dietType: "veg",     name: "Lassi (Sweet)",             price: 60 },
-  { _id: "bv2", category: "Beverages",       dietType: "veg",     name: "Lassi (Salted)",            price: 60 },
-  { _id: "bv3", category: "Beverages",       dietType: "veg",     name: "Mango Lassi",               price: 70 },
-  { _id: "bv4", category: "Beverages",       dietType: "veg",     name: "Chaas",                     price: 40 },
-  { _id: "bv5", category: "Beverages",       dietType: "veg",     name: "Cold Drink (Bottle)",       price: 40 },
-  { _id: "bv6", category: "Beverages",       dietType: "veg",     name: "Water Bottle",              price: 20 },
+// ── Fallback menu (shown until DB loads or if DB is empty) ────────────────────
+const FALLBACK_MENU = [
+  { _id: "s1",  category: "Starters",          dietType: "veg",     name: "Kurkuri Aloo Tikki",          price: 145 },
+  { _id: "s2",  category: "Starters",          dietType: "veg",     name: "Corn Cheese Tikki",           price: 155 },
+  { _id: "s3",  category: "Starters",          dietType: "veg",     name: "Hara Bhara Kebab",            price: 155 },
+  { _id: "s4",  category: "Starters",          dietType: "veg",     name: "Manchurian",                  price: 175 },
+  { _id: "s5",  category: "Starters",          dietType: "veg",     name: "Veg. Crispy",                 price: 175 },
+  { _id: "s6",  category: "Starters",          dietType: "veg",     name: "Crispy Corn",                 price: 185 },
+  { _id: "s7",  category: "Starters",          dietType: "veg",     name: "Chole Chilly",                price: 185 },
+  { _id: "s8",  category: "Starters",          dietType: "veg",     name: "Paneer Chilly",               price: 185 },
+  { _id: "s9",  category: "Starters",          dietType: "veg",     name: "Mushroom Chilly",             price: 195 },
+  { _id: "s10", category: "Starters",          dietType: "veg",     name: "Paneer 65",                   price: 195 },
+  { _id: "s11", category: "Starters",          dietType: "veg",     name: "Mushroom 65",                 price: 195 },
+  { _id: "s12", category: "Starters",          dietType: "veg",     name: "Cheese Satay",                price: 205 },
+  { _id: "b1",  category: "Bhatti Se",         dietType: "veg",     name: "Classic Paneer Tikka",        price: 195 },
+  { _id: "b2",  category: "Bhatti Se",         dietType: "veg",     name: "Tandoori Soya Chaap",         price: 185 },
+  { _id: "b3",  category: "Bhatti Se",         dietType: "veg",     name: "Tandoori Mushroom",           price: 195 },
+  { _id: "b4",  category: "Bhatti Se",         dietType: "veg",     name: "Angara Paneer Tikka",         price: 255 },
+  { _id: "t1",  category: "Tea Time",          dietType: "veg",     name: "Plain Maggi",                 price: 90  },
+  { _id: "t2",  category: "Tea Time",          dietType: "veg",     name: "French Fries",                price: 95  },
+  { _id: "t3",  category: "Tea Time",          dietType: "veg",     name: "Peri Peri Fries",             price: 120 },
+  { _id: "t4",  category: "Tea Time",          dietType: "veg",     name: "Peri Peri Corn",              price: 165 },
+  { _id: "t5",  category: "Tea Time",          dietType: "veg",     name: "Masala Maggie",               price: 130 },
+  { _id: "t6",  category: "Tea Time",          dietType: "veg",     name: "Veg Fried Rice",              price: 155 },
+  { _id: "pp1", category: "Papad",             dietType: "veg",     name: "Roasted Papad",               price: 15  },
+  { _id: "pp2", category: "Papad",             dietType: "veg",     name: "Fry Papad",                   price: 20  },
+  { _id: "pp3", category: "Papad",             dietType: "veg",     name: "Butter Papad",                price: 25  },
+  { _id: "pp4", category: "Papad",             dietType: "veg",     name: "Masala Papad",                price: 35  },
+  { _id: "pp5", category: "Papad",             dietType: "veg",     name: "Papad Bhurji",                price: 95  },
+  { _id: "ra1", category: "Raita / Salad",     dietType: "veg",     name: "Plain Curd",                  price: 35  },
+  { _id: "ra2", category: "Raita / Salad",     dietType: "veg",     name: "Tadka Dahi",                  price: 85  },
+  { _id: "ra3", category: "Raita / Salad",     dietType: "veg",     name: "Boondi Raita",                price: 80  },
+  { _id: "ra4", category: "Raita / Salad",     dietType: "veg",     name: "Vegetable Raita",             price: 80  },
+  { _id: "ra5", category: "Raita / Salad",     dietType: "veg",     name: "Green Salad",                 price: 80  },
+  { _id: "ck1", category: "Chole Kulche Combo",dietType: "veg",     name: "Chole + Aloo Pyaz Kulcha",    price: 160 },
+  { _id: "ck2", category: "Chole Kulche Combo",dietType: "veg",     name: "Chole + Mix Kulcha",          price: 180 },
+  { _id: "ck3", category: "Chole Kulche Combo",dietType: "veg",     name: "Chole + Paneer Kulcha",       price: 180 },
+  { _id: "ck4", category: "Chole Kulche Combo",dietType: "veg",     name: "Chole + Aloo Cheese Kulcha",  price: 190 },
+  { _id: "fb1", category: "Food Box",          dietType: "veg",     name: "Punjabi Thali",               price: 225, description: "Mix Veg + PBM + Dal Fry + 3 Butter Roti + Rice + Papad + Sweet + Salad" },
+  { _id: "fb2", category: "Food Box",          dietType: "veg",     name: "Royal Dhaba Thali",           price: 295, description: "Chana Masala + PBM + Dal Makhani + 1 Butter Naan + 1 Laccha Paratha + Jeera Rice + Papad + Sweet + Salad" },
+  { _id: "p1",  category: "Paneer Se",         dietType: "veg",     name: "PBM (Half)",                  price: 125 },
+  { _id: "p2",  category: "Paneer Se",         dietType: "veg",     name: "PBM (Full)",                  price: 195 },
+  { _id: "p3",  category: "Paneer Se",         dietType: "veg",     name: "Matar Paneer (Half)",         price: 125 },
+  { _id: "p4",  category: "Paneer Se",         dietType: "veg",     name: "Matar Paneer (Full)",         price: 195 },
+  { _id: "p5",  category: "Paneer Se",         dietType: "veg",     name: "Paneer Masala (Half)",        price: 120 },
+  { _id: "p6",  category: "Paneer Se",         dietType: "veg",     name: "Paneer Masala (Full)",        price: 185 },
+  { _id: "p7",  category: "Paneer Se",         dietType: "veg",     name: "Palak Paneer",                price: 195 },
+  { _id: "p8",  category: "Paneer Se",         dietType: "veg",     name: "Kadhai Paneer",               price: 205 },
+  { _id: "p9",  category: "Paneer Se",         dietType: "veg",     name: "Paneer Angara",               price: 225 },
+  { _id: "p10", category: "Paneer Se",         dietType: "veg",     name: "Tawa Paneer Makhan Masala",   price: 215 },
+  { _id: "p11", category: "Paneer Se",         dietType: "veg",     name: "Malai Kofta",                 price: 205 },
+  { _id: "p12", category: "Paneer Se",         dietType: "veg",     name: "Aloo Tikki Makhani",          price: 205 },
+  { _id: "p13", category: "Paneer Se",         dietType: "veg",     name: "Paneer Punjabi",              price: 195 },
+  { _id: "p14", category: "Paneer Se",         dietType: "veg",     name: "Paneer Saoji",                price: 195 },
+  { _id: "p15", category: "Paneer Se",         dietType: "veg",     name: "PBM Crush",                   price: 225 },
+  { _id: "p16", category: "Paneer Se",         dietType: "veg",     name: "Paneer Tikka Masala",         price: 225 },
+  { _id: "p17", category: "Paneer Se",         dietType: "veg",     name: "Paneer Bhurji",               price: 225 },
+  { _id: "p18", category: "Paneer Se",         dietType: "veg",     name: "Dhaba Paneer",                price: 225 },
+  { _id: "v1",  category: "Subziyan",          dietType: "veg",     name: "Mix Veg (Half)",              price: 110 },
+  { _id: "v2",  category: "Subziyan",          dietType: "veg",     name: "Mix Veg (Full)",              price: 155 },
+  { _id: "v3",  category: "Subziyan",          dietType: "veg",     name: "Sev Bhaji (Half)",            price: 100 },
+  { _id: "v4",  category: "Subziyan",          dietType: "veg",     name: "Sev Bhaji (Full)",            price: 145 },
+  { _id: "v5",  category: "Subziyan",          dietType: "veg",     name: "Sev Tamatar (Half)",          price: 110 },
+  { _id: "v6",  category: "Subziyan",          dietType: "veg",     name: "Sev Tamatar (Full)",          price: 165 },
+  { _id: "v7",  category: "Subziyan",          dietType: "veg",     name: "Punjabi Chole (Half)",        price: 110 },
+  { _id: "v8",  category: "Subziyan",          dietType: "veg",     name: "Punjabi Chole (Full)",        price: 175 },
+  { _id: "v9",  category: "Subziyan",          dietType: "veg",     name: "Baigan Bharta (Half)",        price: 110 },
+  { _id: "v10", category: "Subziyan",          dietType: "veg",     name: "Baigan Bharta (Full)",        price: 175 },
+  { _id: "v11", category: "Subziyan",          dietType: "veg",     name: "Veg Kolhapuri",               price: 165 },
+  { _id: "v12", category: "Subziyan",          dietType: "veg",     name: "Tamatar Chutney",             price: 165 },
+  { _id: "v13", category: "Subziyan",          dietType: "veg",     name: "Malai Sev Bhaji",             price: 185 },
+  { _id: "v14", category: "Subziyan",          dietType: "veg",     name: "Veg Handi",                   price: 185 },
+  { _id: "v15", category: "Subziyan",          dietType: "veg",     name: "Veg Dhaba",                   price: 205 },
+  { _id: "v16", category: "Subziyan",          dietType: "veg",     name: "Aloo Gobhi Matar",            price: 165 },
+  { _id: "v17", category: "Subziyan",          dietType: "veg",     name: "Jeera Aloo",                  price: 145 },
+  { _id: "v18", category: "Subziyan",          dietType: "veg",     name: "Lasooni Palak",               price: 195 },
+  { _id: "v19", category: "Subziyan",          dietType: "veg",     name: "Soya Chaap Tikka Masala",     price: 215 },
+  { _id: "v20", category: "Subziyan",          dietType: "veg",     name: "Mushroom Masala",             price: 195 },
+  { _id: "v21", category: "Subziyan",          dietType: "veg",     name: "Veg Keema Kastoori",          price: 195 },
+  { _id: "v22", category: "Subziyan",          dietType: "veg",     name: "Lasooni Veg",                 price: 195 },
+  { _id: "v23", category: "Subziyan",          dietType: "veg",     name: "Mushroom Keema",              price: 225 },
+  { _id: "v24", category: "Subziyan",          dietType: "veg",     name: "Special Tawa Chaap",          price: 225 },
+  { _id: "d1",  category: "Dal",               dietType: "veg",     name: "Dal Fry (Half)",              price: 90  },
+  { _id: "d2",  category: "Dal",               dietType: "veg",     name: "Dal Fry (Full)",              price: 135 },
+  { _id: "d3",  category: "Dal",               dietType: "veg",     name: "Dal Tadka (Half)",            price: 115 },
+  { _id: "d4",  category: "Dal",               dietType: "veg",     name: "Dal Tadka (Full)",            price: 165 },
+  { _id: "d5",  category: "Dal",               dietType: "veg",     name: "Dal Makhani (Half)",          price: 120 },
+  { _id: "d6",  category: "Dal",               dietType: "veg",     name: "Dal Makhani (Full)",          price: 185 },
+  { _id: "d7",  category: "Dal",               dietType: "veg",     name: "Dhaba Dal",                   price: 180 },
+  { _id: "d8",  category: "Dal",               dietType: "veg",     name: "Tadka Extra",                 price: 30  },
+  { _id: "d9",  category: "Dal",               dietType: "veg",     name: "Butter Tadka",                price: 50  },
+  { _id: "r1",  category: "Rotiyaan",          dietType: "veg",     name: "Tawa / Tandoori Roti",        price: 15  },
+  { _id: "r2",  category: "Rotiyaan",          dietType: "veg",     name: "Butter Roti",                 price: 20  },
+  { _id: "r3",  category: "Rotiyaan",          dietType: "veg",     name: "Butter Naan",                 price: 50  },
+  { _id: "r4",  category: "Rotiyaan",          dietType: "veg",     name: "Butter Garlic Naan",          price: 55  },
+  { _id: "r5",  category: "Rotiyaan",          dietType: "veg",     name: "Cheese Garlic Naan",          price: 75  },
+  { _id: "r6",  category: "Rotiyaan",          dietType: "veg",     name: "Amritsari Kulcha",            price: 80  },
+  { _id: "r7",  category: "Rotiyaan",          dietType: "veg",     name: "Laccha Paratha",              price: 50  },
+  { _id: "r8",  category: "Rotiyaan",          dietType: "veg",     name: "Aloo Paratha",                price: 80  },
+  { _id: "ri1", category: "Rice",              dietType: "veg",     name: "Plain Rice (Half)",           price: 65  },
+  { _id: "ri2", category: "Rice",              dietType: "veg",     name: "Plain Rice (Full)",           price: 105 },
+  { _id: "ri3", category: "Rice",              dietType: "veg",     name: "Jeera Rice (Half)",           price: 85  },
+  { _id: "ri4", category: "Rice",              dietType: "veg",     name: "Jeera Rice (Full)",           price: 125 },
+  { _id: "ri5", category: "Rice",              dietType: "veg",     name: "Butter Jeera Rice",           price: 145 },
+  { _id: "ri6", category: "Rice",              dietType: "veg",     name: "Onion Garlic Rice",           price: 145 },
+  { _id: "ri7", category: "Rice",              dietType: "veg",     name: "Veg. Pulav",                  price: 160 },
+  { _id: "ri8", category: "Rice",              dietType: "veg",     name: "Masala Rice",                 price: 155 },
+  { _id: "ri9", category: "Rice",              dietType: "veg",     name: "Dal Khichdi",                 price: 165 },
+  { _id: "ri10",category: "Rice",              dietType: "veg",     name: "Veg. Biryani",                price: 190 },
+  { _id: "ri11",category: "Rice",              dietType: "veg",     name: "Masala Khichdi",              price: 190 },
+  { _id: "sw1", category: "Sweet",             dietType: "veg",     name: "Gulab Jamun (2 Pc)",          price: 40  },
+  { _id: "sw2", category: "Sweet",             dietType: "veg",     name: "Rabdi (150g)",                price: 100 },
+  { _id: "sw3", category: "Sweet",             dietType: "veg",     name: "Rabdi - Gulab Jamun",         price: 100 },
+  { _id: "bv1", category: "Beverages",         dietType: "veg",     name: "Cold Drink (250ml)",          price: 25  },
+  { _id: "bv2", category: "Beverages",         dietType: "veg",     name: "Mineral Water",               price: 20  },
+  { _id: "bv3", category: "Beverages",         dietType: "veg",     name: "Masala Soda",                 price: 50  },
+  { _id: "bv4", category: "Beverages",         dietType: "veg",     name: "Masala Chach",                price: 30  },
+  { _id: "bv5", category: "Beverages",         dietType: "veg",     name: "Masala Cold Drink",           price: 50  },
+  { _id: "bv6", category: "Beverages",         dietType: "veg",     name: "Lassi",                       price: 55  },
 ]
 
-// ── Restaurant photos ─────────────────────────────────────────────────────────
 const PHOTOS = [
   "https://images.unsplash.com/photo-1631452180519-c014fe946bc7?w=800&q=85",
   "https://images.unsplash.com/photo-1567188040759-fb8a883dc6d6?w=400&q=80",
   "https://images.unsplash.com/photo-1596797038530-2c107229654b?w=400&q=80",
-  "https://images.unsplash.com/photo-1585937421612-70a008356fbe?w=400&q=80",
 ]
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
 function DietDot({ type }) {
   const color = type === "veg" ? "#0f9b58" : "#e43b4f"
   return (
@@ -134,14 +153,12 @@ function AddButton({ item, slug }) {
   const qty = useAppSelector(selectItemQty(item._id))
 
   if (qty === 0) return (
-    <motion.button
-      whileTap={{ scale: 0.93 }}
+    <motion.button whileTap={{ scale: 0.93 }}
       onClick={() => dispatch(addItem({ id: item._id, name: item.name, price: item.price,
         category: item.category, dietType: item.dietType, restaurantSlug: slug }))}
       style={{ background: "#fff", border: "1.5px solid #e23744", borderRadius: 8,
         color: "#e23744", fontWeight: 700, fontSize: 13, padding: "6px 22px",
-        letterSpacing: "0.05em", cursor: "pointer", whiteSpace: "nowrap" }}
-    >
+        letterSpacing: "0.05em", cursor: "pointer", whiteSpace: "nowrap" }}>
       ADD
     </motion.button>
   )
@@ -191,19 +208,32 @@ function MenuItem({ item, slug }) {
   )
 }
 
-// ── Main page ─────────────────────────────────────────────────────────────────
 export default function RestaurantPage() {
   const router = useRouter()
   const slug = "dhaba-junction"
+  const [menu, setMenu] = useState(FALLBACK_MENU)
+  const [listing, setListing] = useState(null)
+  const [loading, setLoading] = useState(true)
   const [activeCategory, setActiveCategory] = useState("")
   const [search, setSearch] = useState("")
   const categoryRefs = useRef({})
   const cartTotal = useAppSelector(selectCartTotal)
   const cartCount = useAppSelector(selectCartCount)
 
-  const grouped = MENU.reduce((acc, item) => {
-    if (!acc[item.category]) acc[item.category] = []
-    acc[item.category].push(item)
+  useEffect(() => {
+    Promise.all([
+      axios.get(`/api/menu/${slug}`).catch(() => ({ data: [] })),
+      axios.get(`/api/listing/${slug}`).catch(() => ({ data: null })),
+    ]).then(([menuRes, listingRes]) => {
+      if (menuRes.data?.length > 0) setMenu(menuRes.data)
+      if (listingRes.data) setListing(listingRes.data)
+    }).finally(() => setLoading(false))
+  }, [])
+
+  const grouped = menu.reduce((acc, item) => {
+    const cat = item.category || "Other"
+    if (!acc[cat]) acc[cat] = []
+    acc[cat].push(item)
     return acc
   }, {})
   const categories = Object.keys(grouped)
@@ -217,7 +247,7 @@ export default function RestaurantPage() {
       )
     : grouped
 
-  useEffect(() => { setActiveCategory(categories[0] || "") }, [])
+  useEffect(() => { if (categories.length) setActiveCategory(categories[0]) }, [menu])
 
   const scrollToCategory = (cat) => {
     setActiveCategory(cat)
@@ -230,7 +260,13 @@ export default function RestaurantPage() {
     }, { rootMargin: "-30% 0px -60% 0px" })
     Object.values(categoryRefs.current).forEach(el => { if (el) observer.observe(el) })
     return () => observer.disconnect()
-  }, [])
+  }, [menu])
+
+  const restaurantName = listing?.title || "Dhaba Junction"
+  const cuisines = listing?.food?.cuisines?.join(", ") || "Punjabi, North Indian"
+  const rating = listing?.food?.rating || 4.2
+  const priceMin = listing?.food?.priceRange?.min || 15
+  const priceMax = listing?.food?.priceRange?.max || 295
 
   return (
     <div style={{ background: "#fff", minHeight: "100vh", paddingBottom: 120 }}>
@@ -238,11 +274,11 @@ export default function RestaurantPage() {
       {/* 4-photo header grid */}
       <div style={{ position: "relative", height: 240, overflow: "hidden",
         display: "grid", gridTemplateColumns: "2fr 1fr", gridTemplateRows: "1fr 1fr", gap: 2 }}>
-        <img src={PHOTOS[0]} alt="Kadai Paneer"
+        <img src={listing?.covers?.[0] || PHOTOS[0]} alt={restaurantName}
           style={{ gridColumn: 1, gridRow: "1 / 3", objectFit: "cover", width: "100%", height: "100%" }} />
-        <img src={PHOTOS[1]} alt="Dal Makhani"
+        <img src={listing?.covers?.[1] || PHOTOS[1]} alt=""
           style={{ objectFit: "cover", width: "100%", height: "100%" }} />
-        <img src={PHOTOS[2]} alt="Roti"
+        <img src={listing?.covers?.[2] || PHOTOS[2]} alt=""
           style={{ objectFit: "cover", width: "100%", height: "100%" }} />
         <button onClick={() => router.back()}
           style={{ position: "absolute", top: 16, left: 16, background: "rgba(255,255,255,0.95)",
@@ -258,23 +294,21 @@ export default function RestaurantPage() {
         </span>
       </div>
 
-      {/* Restaurant info */}
+      {/* Restaurant info from DB */}
       <div style={{ padding: "16px 16px 0" }}>
         <h1 style={{ fontSize: 22, fontWeight: 800, color: "#1c1c1c", margin: 0 }}>
-          Dhaba Junction
+          {restaurantName}
         </h1>
-        <p style={{ fontSize: 13, color: "#686b78", margin: "4px 0 2px" }}>
-          Punjabi, North Indian, Chinese
-        </p>
+        <p style={{ fontSize: 13, color: "#686b78", margin: "4px 0 2px" }}>{cuisines}</p>
         <p style={{ fontSize: 13, color: "#686b78", margin: 0 }}>
-          Gondia, Maharashtra
+          {listing?.location?.address || "Gondia, Maharashtra"}
         </p>
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 10,
           paddingBottom: 14, borderBottom: "1px solid #f3f3f3" }}>
           <span style={{ background: "#48c479", color: "#fff", fontWeight: 700, fontSize: 12,
-            borderRadius: 4, padding: "2px 7px" }}>★ 4.2</span>
-          <span style={{ fontSize: 12, color: "#93959f" }}>₹15 – ₹295 per item</span>
-          <span style={{ fontSize: 12, color: "#93959f" }}>· {MENU.length} items</span>
+            borderRadius: 4, padding: "2px 7px" }}>★ {rating}</span>
+          <span style={{ fontSize: 12, color: "#93959f" }}>₹{priceMin} – ₹{priceMax} per item</span>
+          <span style={{ fontSize: 12, color: "#93959f" }}>· {menu.length} items</span>
         </div>
       </div>
 
@@ -292,12 +326,11 @@ export default function RestaurantPage() {
         </div>
       </div>
 
-      {/* Category pills (sticky) */}
+      {/* Category pills */}
       {!search && (
         <div style={{ position: "sticky", top: 0, zIndex: 100, background: "#fff",
           borderBottom: "1px solid #f3f3f3", overflowX: "auto", display: "flex",
-          gap: 0, padding: "0 8px" }}
-          className="no-scrollbar">
+          gap: 0, padding: "0 8px" }} className="no-scrollbar">
           {categories.map(cat => (
             <button key={cat} onClick={() => scrollToCategory(cat)}
               style={{ flexShrink: 0, padding: "11px 14px", border: "none", background: "none",
@@ -307,7 +340,7 @@ export default function RestaurantPage() {
                 transition: "all 0.2s", whiteSpace: "nowrap" }}>
               {cat}
               <span style={{ fontSize: 11, color: "#aaa", marginLeft: 4 }}>
-                ({grouped[cat].length})
+                ({grouped[cat]?.length})
               </span>
             </button>
           ))}
@@ -322,9 +355,7 @@ export default function RestaurantPage() {
             <h2 style={{ fontSize: 16, fontWeight: 700, color: "#1c1c1c",
               margin: "18px 0 0", paddingBottom: 2, display: "flex", alignItems: "center", gap: 8 }}>
               {cat}
-              <span style={{ fontSize: 12, color: "#93959f", fontWeight: 400 }}>
-                ({items.length})
-              </span>
+              <span style={{ fontSize: 12, color: "#93959f", fontWeight: 400 }}>({items.length})</span>
             </h2>
             {items.map(item => <MenuItem key={item._id} item={item} slug={slug} />)}
           </div>
@@ -335,8 +366,7 @@ export default function RestaurantPage() {
       <AnimatePresence>
         {cartCount > 0 && (
           <motion.div
-            initial={{ y: 80, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
+            initial={{ y: 80, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
             exit={{ y: 80, opacity: 0 }}
             transition={{ type: "spring", stiffness: 400, damping: 35 }}
             onClick={() => router.push("/cart")}
