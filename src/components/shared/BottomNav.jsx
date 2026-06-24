@@ -2,13 +2,13 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { motion } from "framer-motion"
+import { motion, AnimatePresence } from "framer-motion"
 import { LuShoppingCart, LuHistory, LuThumbsUp, LuLayoutGrid } from "react-icons/lu"
 
 const NAV_ITEMS = [
+  { label: "Recommended", href: "/recommended", icon: LuThumbsUp },
   { label: "Cart",        href: "/cart",        icon: LuShoppingCart },
   { label: "History",     href: "/history",     icon: LuHistory },
-  { label: "Recommended", href: "/recommended", icon: LuThumbsUp },
   { label: "4",           href: "/four",        icon: LuLayoutGrid },
 ]
 
@@ -16,50 +16,72 @@ export default function BottomNav() {
   const pathname = usePathname()
 
   return (
-    <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-lg z-[999] bg-background/80 backdrop-blur-xl border-t border-border">
-      <div className="flex items-center justify-around px-2 py-2">
+    <nav
+      className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-lg z-[999]"
+      style={{
+        background: "#fff",
+        borderTop: "1px solid #f0f0f0",
+        borderRadius: "16px 16px 0 0",
+        boxShadow: "0 -4px 20px rgba(0,0,0,0.08)",
+        height: 70,
+      }}
+    >
+      <div className="grid grid-cols-4 h-full">
         {NAV_ITEMS.map(({ label, href, icon: Icon }) => {
           const active = pathname === href
           return (
             <Link
               key={href}
               href={href}
-              className="flex flex-col items-center gap-1 flex-1 py-1 relative"
+              className="relative flex flex-col items-center justify-center gap-1 select-none"
             >
-              {/* Active pill indicator */}
-              {active && (
-                <motion.div
-                  layoutId="nav-indicator"
-                  className="absolute -top-2 left-1/2 -translate-x-1/2 w-8 h-0.5 rounded-full bg-orange-400"
-                  transition={{ type: "spring", stiffness: 500, damping: 35 }}
-                />
-              )}
+              {/* Sliding top indicator */}
+              <AnimatePresence>
+                {active && (
+                  <motion.div
+                    layoutId="active-bar"
+                    className="absolute top-0 left-1/2 -translate-x-1/2 h-[3px] w-8 rounded-b-full"
+                    style={{ background: "#e23744" }}
+                    initial={{ opacity: 0, scaleX: 0 }}
+                    animate={{ opacity: 1, scaleX: 1 }}
+                    exit={{ opacity: 0, scaleX: 0 }}
+                    transition={{ type: "spring", stiffness: 500, damping: 35 }}
+                  />
+                )}
+              </AnimatePresence>
 
+              {/* Icon */}
               <motion.div
-                animate={{ scale: active ? 1.15 : 1, y: active ? -1 : 0 }}
-                transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                animate={{
+                  scale: active ? 1.18 : 1,
+                  y: active ? -1 : 0,
+                }}
+                transition={{ type: "spring", stiffness: 500, damping: 30 }}
               >
                 <Icon
                   size={22}
-                  className={active ? "text-orange-400" : "text-foreground/40"}
-                  strokeWidth={active ? 2.2 : 1.6}
+                  strokeWidth={active ? 2.4 : 1.7}
+                  style={{ color: active ? "#e23744" : "#9ca3af", transition: "color 0.2s ease" }}
                 />
               </motion.div>
 
-              <span
-                className={`text-[10px] font-medium tracking-wide transition-colors ${
-                  active ? "text-orange-400" : "text-foreground/40"
-                }`}
+              {/* Label */}
+              <motion.span
+                animate={{ color: active ? "#e23744" : "#9ca3af" }}
+                transition={{ duration: 0.2 }}
+                style={{
+                  fontSize: 10,
+                  fontWeight: active ? 700 : 500,
+                  letterSpacing: "0.03em",
+                  lineHeight: 1,
+                }}
               >
                 {label}
-              </span>
+              </motion.span>
             </Link>
           )
         })}
       </div>
-
-      {/* Safe area spacer for mobile */}
-      <div className="h-safe-area-inset-bottom" />
     </nav>
   )
 }
