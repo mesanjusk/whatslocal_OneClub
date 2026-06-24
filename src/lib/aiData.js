@@ -41,7 +41,7 @@ export const DISHES_DB = {
       tasteScore: 4.0,
     },
     {
-      id: "r3", restaurant: "Dhaba Junction",
+      id: "r3", restaurant: "Dhaba Junction", slug: "dhaba-junction",
       image: "https://images.unsplash.com/photo-1567188040759-fb8a883dc6d6?w=500&q=80",
       price: 55, quantity: "2 pcs", rating: 4.3,
       tags: ["Recommended"],
@@ -58,7 +58,7 @@ export const DISHES_DB = {
   ],
   "paneer": [
     {
-      id: "r1", restaurant: "Dhaba Junction",
+      id: "r1", restaurant: "Dhaba Junction", slug: "dhaba-junction",
       image: "https://images.unsplash.com/photo-1631452180519-c014fe946bc7?w=500&q=80",
       price: 195, quantity: "Full plate", rating: 4.5,
       tags: ["Most Ordered", "Recommended"],
@@ -135,7 +135,7 @@ export const DISHES_DB = {
       tasteScore: 4.1,
     },
     {
-      id: "r3", restaurant: "Dhaba Junction",
+      id: "r3", restaurant: "Dhaba Junction", slug: "dhaba-junction",
       image: "https://images.unsplash.com/photo-1596797038530-2c107229654b?w=500&q=80",
       price: 190, quantity: "1 plate", rating: 4.0,
       tags: [],
@@ -199,7 +199,7 @@ export const DISHES_DB = {
       tasteScore: 4.2,
     },
     {
-      id: "r2", restaurant: "Dhaba Junction",
+      id: "r2", restaurant: "Dhaba Junction", slug: "dhaba-junction",
       image: "https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=500&q=80",
       price: 120, quantity: "1 plate", rating: 4.0,
       tags: ["Best Value", "Recommended"],
@@ -302,7 +302,7 @@ export const DISHES_DB = {
   ],
   "north indian": [
     {
-      id: "r1", restaurant: "Dhaba Junction",
+      id: "r1", restaurant: "Dhaba Junction", slug: "dhaba-junction",
       image: "https://images.unsplash.com/photo-1631452180519-c014fe946bc7?w=500&q=80",
       price: 180, quantity: "Full meal", rating: 4.5,
       tags: ["Most Ordered", "Recommended"],
@@ -334,7 +334,7 @@ export const DISHES_DB = {
       tasteScore: 4.2,
     },
     {
-      id: "r2", restaurant: "Dhaba Junction",
+      id: "r2", restaurant: "Dhaba Junction", slug: "dhaba-junction",
       image: "https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=500&q=80",
       price: 120, quantity: "Full plate", rating: 4.0,
       tags: ["Best Value"],
@@ -346,7 +346,7 @@ export const DISHES_DB = {
   ],
   "desserts": [
     {
-      id: "r1", restaurant: "Dhaba Junction",
+      id: "r1", restaurant: "Dhaba Junction", slug: "dhaba-junction",
       image: "https://images.unsplash.com/photo-1601303516534-3b50cba4b08a?w=500&q=80",
       price: 100, quantity: "1 bowl", rating: 4.4,
       tags: ["Most Ordered", "Recommended"],

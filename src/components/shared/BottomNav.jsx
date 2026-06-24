@@ -4,16 +4,19 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
 import { LuShoppingCart, LuHistory, LuThumbsUp, LuHouse } from "react-icons/lu"
+import { useAppSelector } from "@/lib/store/hooks"
+import { selectCartCount } from "@/lib/store/slices/cartSlice"
 
 const NAV_ITEMS = [
   { label: "Home",        href: "/home",        icon: LuHouse },
   { label: "Recommended", href: "/recommended", icon: LuThumbsUp },
-  { label: "Cart",        href: "/cart",        icon: LuShoppingCart },
+  { label: "Cart",        href: "/cart",        icon: LuShoppingCart, showBadge: true },
   { label: "History",     href: "/history",     icon: LuHistory },
 ]
 
 export default function BottomNav() {
-  const pathname = usePathname()
+  const pathname  = usePathname()
+  const cartCount = useAppSelector(selectCartCount)
 
   return (
     <nav
@@ -27,15 +30,17 @@ export default function BottomNav() {
       }}
     >
       <div className="grid grid-cols-4 h-full">
-        {NAV_ITEMS.map(({ label, href, icon: Icon }) => {
+        {NAV_ITEMS.map(({ label, href, icon: Icon, showBadge }) => {
           const active = pathname === href
+          const count  = showBadge ? cartCount : 0
+
           return (
             <Link
               key={href}
               href={href}
               className="relative flex flex-col items-center justify-center gap-1 select-none"
             >
-              {/* Sliding top indicator */}
+              {/* Active top bar */}
               <AnimatePresence>
                 {active && (
                   <motion.div
@@ -50,31 +55,42 @@ export default function BottomNav() {
                 )}
               </AnimatePresence>
 
-              {/* Icon */}
-              <motion.div
-                animate={{
-                  scale: active ? 1.18 : 1,
-                  y: active ? -1 : 0,
-                }}
-                transition={{ type: "spring", stiffness: 500, damping: 30 }}
-              >
-                <Icon
-                  size={22}
-                  strokeWidth={active ? 2.4 : 1.7}
-                  style={{ color: active ? "#e23744" : "#9ca3af", transition: "color 0.2s ease" }}
-                />
-              </motion.div>
+              {/* Icon + badge wrapper */}
+              <div className="relative">
+                <motion.div
+                  animate={{ scale: active ? 1.18 : 1, y: active ? -1 : 0 }}
+                  transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                >
+                  <Icon
+                    size={22}
+                    strokeWidth={active ? 2.4 : 1.7}
+                    style={{ color: active ? "#e23744" : "#9ca3af", transition: "color 0.2s ease" }}
+                  />
+                </motion.div>
+
+                {/* Cart badge */}
+                <AnimatePresence>
+                  {showBadge && count > 0 && (
+                    <motion.span
+                      key={count}
+                      initial={{ scale: 0, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      exit={{ scale: 0, opacity: 0 }}
+                      transition={{ type: "spring", stiffness: 600, damping: 22 }}
+                      className="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 px-[3px] rounded-full flex items-center justify-center"
+                      style={{ background: "#e23744", fontSize: 9, fontWeight: 800, color: "#fff", lineHeight: 1 }}
+                    >
+                      {count > 99 ? "99+" : count}
+                    </motion.span>
+                  )}
+                </AnimatePresence>
+              </div>
 
               {/* Label */}
               <motion.span
                 animate={{ color: active ? "#e23744" : "#9ca3af" }}
                 transition={{ duration: 0.2 }}
-                style={{
-                  fontSize: 10,
-                  fontWeight: active ? 700 : 500,
-                  letterSpacing: "0.03em",
-                  lineHeight: 1,
-                }}
+                style={{ fontSize: 10, fontWeight: active ? 700 : 500, letterSpacing: "0.03em", lineHeight: 1 }}
               >
                 {label}
               </motion.span>
