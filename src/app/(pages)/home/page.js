@@ -181,6 +181,9 @@ export default function Page() {
         </span>
       )}
 
+      {/* ── Featured Restaurant: Dhaba Junction ── */}
+      <DhabaJunctionCard />
+
       {/* Search bar */}
       <div className="px-hr mt-3 mb-2">
         <div className="flex items-center gap-2 bg-secondary border border-border rounded-xl px-3 py-2">
@@ -329,6 +332,42 @@ export default function Page() {
         </>
       )}
     </div>
+  )
+}
+
+function DhabaJunctionCard() {
+  const PHOTOS = [
+    "https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=400&q=80",
+    "https://images.unsplash.com/photo-1601050690597-df0568f70950?w=400&q=80",
+    "https://images.unsplash.com/photo-1585937421612-70a008356fbe?w=400&q=80",
+  ]
+  return (
+    <Link href="/restaurant/dhaba-junction" className="block mx-hr mt-3 mb-1 rounded-2xl overflow-hidden border border-border bg-secondary drop-shadow-xl shadow-black">
+      {/* Photo grid */}
+      <div className="flex h-36 gap-0.5">
+        <img src={PHOTOS[0]} alt="" className="flex-[2] object-cover h-full" />
+        <div className="flex-1 flex flex-col gap-0.5">
+          <img src={PHOTOS[1]} alt="" className="flex-1 object-cover w-full" />
+          <img src={PHOTOS[2]} alt="" className="flex-1 object-cover w-full" />
+        </div>
+      </div>
+      {/* Info */}
+      <div className="px-4 py-3">
+        <div className="flex items-start justify-between gap-2">
+          <div>
+            <h3 className="font-bold text-base leading-tight">Dhaba Junction</h3>
+            <p className="text-xs opacity-60 mt-0.5">Punjabi, North Indian · Pure Veg</p>
+            <p className="text-xs opacity-50 mt-0.5">Gondia, Maharashtra</p>
+          </div>
+          <span className="shrink-0 bg-green-600 text-white text-xs font-bold px-2 py-0.5 rounded">★ 4.2</span>
+        </div>
+        <div className="flex items-center gap-3 mt-2 text-xs opacity-50">
+          <span>₹15 – ₹295 per item</span>
+          <span>·</span>
+          <span>130+ items</span>
+        </div>
+      </div>
+    </Link>
   )
 }
 
