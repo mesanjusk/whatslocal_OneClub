@@ -44,6 +44,42 @@ export const GET = async (req, { params }) => {
                 },
               },
             },
+            {
+              $lookup: {
+                from: "menu_items",
+                localField: "_id",
+                foreignField: "listing",
+                as: "menu",
+                pipeline: [
+                  { $match: { isAvailable: true } },
+                  { $sort: { sortOrder: 1 } },
+                ],
+              },
+            },
+            {
+              $lookup: {
+                from: "offers",
+                localField: "_id",
+                foreignField: "listing",
+                as: "offers",
+                pipeline: [
+                  { $match: { isActive: true, validTo: { $gte: new Date() } } },
+                ],
+              },
+            },
+            {
+              $lookup: {
+                from: "reviews",
+                localField: "_id",
+                foreignField: "listing",
+                as: "reviews",
+                pipeline: [
+                  { $match: { status: "approved" } },
+                  { $sort: { createdAt: -1 } },
+                  { $limit: 10 },
+                ],
+              },
+            },
           ])
         )?.[0]
 

@@ -7,7 +7,6 @@ import "@/styles/index.css"
 import Header from "@/components/shared/Header"
 import TrackVisitor from "@/components/utils/TrackVisitor"
 import StoreProvider from "./StoreProvider"
-import Msg91Scripts from "@/components/shared/Msg91Scripts"
 import { ToastContainer } from "react-toastify"
 
 export const viewport = {
@@ -32,7 +31,6 @@ export default function RootLayout({ children }) {
           <TrackVisitor />
         </StoreProvider>
         <ToastContainer theme="dark" position="bottom-center" />
-        <Msg91Scripts />
       </body>
     </html>
   )

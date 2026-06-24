@@ -26,8 +26,11 @@ import imageCompression from "browser-image-compression"
 import Spinner from "@/components/shared/Spinner"
 import debounce from "lodash.debounce"
 import { IoMdCheckmark } from "react-icons/io"
+import { IoTrashOutline, IoAddOutline } from "react-icons/io5"
 import RadioGroup from "@/components/shared/RadioGroup"
 import { LISTING_TYPES } from "@/lib/utils/constants"
+import { TiStarFullOutline, TiStarOutline } from "react-icons/ti"
+import { useAppSelector } from "@/lib/store/hooks"
 
 const aspectRatioOptions = [
   { label: "1/1", value: 1 / 1, info: "Square" },
@@ -38,12 +41,23 @@ const aspectRatioOptions = [
 const viewTabOptions = [
   { label: "Details", value: 0 },
   { label: "Images", value: 1 },
+  { label: "Food", value: 2 },
 ]
 
 const listingTypes = [
   { label: "Normal", value: LISTING_TYPES.NORMAL },
   { label: "Form", value: LISTING_TYPES.FORM },
+  { label: "Food", value: LISTING_TYPES.FOOD },
 ]
+
+const DIET_OPTIONS = [
+  { label: "Veg", value: "veg" },
+  { label: "Non-Veg", value: "non-veg" },
+  { label: "Both", value: "both" },
+]
+
+const DAYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
+const DAY_LABELS = { mon: "Mon", tue: "Tue", wed: "Wed", thu: "Thu", fri: "Fri", sat: "Sat", sun: "Sun" }
 
 const INITIAL_VALUES = {
   type: listingTypes[0].value,
@@ -52,6 +66,14 @@ const INITIAL_VALUES = {
   thumbnailFile: "",
   coverFiles: [],
   coverAspectRatio: aspectRatioOptions[0].label,
+  food: {
+    cuisines: [],
+    dietType: "",
+    priceRange: { min: "", max: "", avgCostForTwo: "" },
+    openingHours: {},
+    rating: "",
+    isFeatured: false,
+  },
 }
 
 export default function ListingForm() {
@@ -63,13 +85,30 @@ export default function ListingForm() {
   const [viewState, setViewState] = useState(0)
   const [slugChecking, setSlugChecking] = useState(false)
   const [formState, setFormState] = useState(INITIAL_VALUES)
-  const [imageURLs, setImageURLs] = useState({
-    thumbnail: "",
-    covers: [],
-    deletedCovers: [],
-  })
+  const [imageURLs, setImageURLs] = useState({ thumbnail: "", covers: [], deletedCovers: [] })
+  const [menuItems, setMenuItems] = useState([])
+  const [menuLoading, setMenuLoading] = useState(false)
+  const [offers, setOffers] = useState([])
+  const [offersLoading, setOffersLoading] = useState(false)
+  const [reviews, setReviews] = useState([])
+  const userState = useAppSelector((state) => state.user)
+  const authHeader = { Authorization: `Bearer ${userState?.token}` }
 
   const isCreatingNew = listingSlug === "create"
+
+  const fetchMenuAndOffers = async () => {
+    if (isCreatingNew || !listingSlug) return
+    try {
+      const [menuResp, offersResp, reviewsResp] = await Promise.all([
+        axios.get(`/api/menu/${listingSlug}`),
+        axios.get(`/api/offer/${listingSlug}`),
+        axios.get(`/api/review/admin/${listingSlug}`, { headers: authHeader }),
+      ])
+      setMenuItems(menuResp.data || [])
+      setOffers(offersResp.data || [])
+      setReviews(reviewsResp.data || [])
+    } catch (_) {}
+  }
 
   useEffect(() => {
     ;(async () => {
@@ -124,6 +163,8 @@ export default function ListingForm() {
         console.error(error)
       }
     })()
+    fetchMenuAndOffers()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const compressImage = async (file) => {
@@ -489,6 +530,100 @@ export default function ListingForm() {
                 </>
               )}
 
+              {values.type === LISTING_TYPES.FOOD && (
+                <div id="form-food" className="flex flex-col gap-4 pt-2">
+                  <h3 className="text-lg">Restaurant Info</h3>
+
+                  <button
+                    tabIndex={1}
+                    type="button"
+                    onClick={() => setFieldValue("food.isFeatured", !values.food?.isFeatured)}
+                  >
+                    <Input
+                      displayValue="Featured Listing"
+                      prefix={{
+                        element: (
+                          <IoMdCheckmark
+                            className={clsx(
+                              "rounded-sm p-[1px] size-6 flex items-center justify-center -ml-1.5",
+                              !values.food?.isFeatured ? "text-primary/0 bg-gray-400" : "bg-yellow-500"
+                            )}
+                          />
+                        ),
+                      }}
+                      hidden={true}
+                    />
+                  </button>
+
+                  <Field
+                    name="food.dietType"
+                    label="Diet Type"
+                    value={values.food?.dietType}
+                    setValue={(val) => setFieldValue("food.dietType", val)}
+                    options={DIET_OPTIONS}
+                    as={RadioGroup}
+                  />
+
+                  <div>
+                    <label className="text-sm opacity-60 block mb-1">Cuisines</label>
+                    <CuisineTagInput
+                      tags={values.food?.cuisines || []}
+                      onChange={(tags) => setFieldValue("food.cuisines", tags)}
+                    />
+                  </div>
+
+                  <div className="flex gap-2">
+                    <Field type="number" name="food.priceRange.min" label="Min price (₹)" as={Input} labelClassName="flex-1" />
+                    <Field type="number" name="food.priceRange.max" label="Max price (₹)" as={Input} labelClassName="flex-1" />
+                  </div>
+                  <Field type="number" name="food.priceRange.avgCostForTwo" label="Avg cost for 2 (₹)" as={Input} />
+                  <Field type="number" name="food.rating" label="Admin rating (0–5)" as={Input} placeholder="e.g. 4.2" />
+
+                  <h3 className="mt-2 text-lg">Opening Hours</h3>
+                  {DAYS.map((day) => (
+                    <div key={day} className="flex gap-2 items-center">
+                      <span className="w-8 text-sm opacity-60 shrink-0">{DAY_LABELS[day]}</span>
+                      <Field type="text" name={`food.openingHours.${day}.open`} placeholder="9:00 AM" as={Input} labelClassName="flex-1 min-w-0" />
+                      <span className="text-sm opacity-40">–</span>
+                      <Field type="text" name={`food.openingHours.${day}.close`} placeholder="10:00 PM" as={Input} labelClassName="flex-1 min-w-0" />
+                    </div>
+                  ))}
+
+                  <h3 className="mt-2 text-lg">Menu Items</h3>
+                  <MenuEditor
+                    items={menuItems}
+                    setItems={setMenuItems}
+                    listingSlug={listingSlug}
+                    loading={menuLoading}
+                    setLoading={setMenuLoading}
+                    authHeader={authHeader}
+                    isCreatingNew={isCreatingNew}
+                  />
+
+                  <h3 className="mt-2 text-lg">Offers</h3>
+                  <OffersEditor
+                    offers={offers}
+                    setOffers={setOffers}
+                    listingSlug={listingSlug}
+                    loading={offersLoading}
+                    setLoading={setOffersLoading}
+                    authHeader={authHeader}
+                    isCreatingNew={isCreatingNew}
+                  />
+
+                  {reviews.length > 0 && (
+                    <>
+                      <h3 className="mt-2 text-lg">Review Moderation</h3>
+                      <ReviewModerator
+                        reviews={reviews}
+                        setReviews={setReviews}
+                        authHeader={authHeader}
+                      />
+                    </>
+                  )}
+                </div>
+              )}
+
               <h3 className="pt-4 text-lg" id="form-images">
                 Images
               </h3>
@@ -667,14 +802,10 @@ export default function ListingForm() {
                 value={viewState}
                 setValue={(val) => {
                   setViewState(val)
-                  document
-                    .getElementById(val === 0 ? "form-details" : "form-images")
-                    .scrollIntoView({
-                      behavior: "smooth",
-                      block: "start",
-                    })
+                  const ids = { 0: "form-details", 1: "form-images", 2: "form-food" }
+                  document.getElementById(ids[val])?.scrollIntoView({ behavior: "smooth", block: "start" })
                 }}
-                options={viewTabOptions}
+                options={values.type === LISTING_TYPES.FOOD ? viewTabOptions : viewTabOptions.slice(0, 2)}
               />
 
               <button
@@ -689,6 +820,204 @@ export default function ListingForm() {
           </Form>
         )}
       </Formik>
+    </div>
+  )
+}
+
+function CuisineTagInput({ tags, onChange }) {
+  const [input, setInput] = useState("")
+  const add = () => {
+    const val = input.trim()
+    if (val && !tags.includes(val)) onChange([...tags, val])
+    setInput("")
+  }
+  return (
+    <div>
+      <div className="flex flex-wrap gap-1.5 mb-2">
+        {tags.map((tag) => (
+          <span key={tag} className="flex items-center gap-1 bg-secondary border border-secondary-border rounded-full px-2.5 py-1 text-sm">
+            {tag}
+            <button type="button" onClick={() => onChange(tags.filter((t) => t !== tag))} className="opacity-50 hover:opacity-100 ml-0.5">✕</button>
+          </span>
+        ))}
+      </div>
+      <div className="flex gap-2">
+        <input
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter" || e.key === ",") { e.preventDefault(); add() } }}
+          placeholder="Type and press Enter"
+          className="flex-1 bg-secondary border border-border rounded-xl px-3 py-2 text-sm outline-none"
+        />
+        <button type="button" onClick={add} className="px-3 py-2 bg-primary text-background rounded-xl text-sm">Add</button>
+      </div>
+    </div>
+  )
+}
+
+const BLANK_MENU_ITEM = { name: "", price: "", category: "", dietType: "veg", description: "" }
+const BLANK_OFFER = { title: "", discount: "", description: "", validFrom: "", validTo: "" }
+
+function MenuEditor({ items, setItems, listingSlug, loading, setLoading, authHeader, isCreatingNew }) {
+  const [draft, setDraft] = useState(BLANK_MENU_ITEM)
+  const [showForm, setShowForm] = useState(false)
+
+  const saveItem = async () => {
+    if (!draft.name || !draft.price) return toast.error("Name and price are required")
+    if (isCreatingNew) return toast.error("Save the listing first before adding menu items")
+    setLoading(true)
+    try {
+      const { data } = await axios.post(`/api/menu/${listingSlug}`, draft, { headers: authHeader })
+      setItems((prev) => draft._id ? prev.map((i) => i._id === draft._id ? data : i) : [...prev, data])
+      setDraft(BLANK_MENU_ITEM)
+      setShowForm(false)
+      toast.success("Menu item saved")
+    } catch (err) { toast.error("Failed to save item") }
+    setLoading(false)
+  }
+
+  const deleteItem = async (id) => {
+    setLoading(true)
+    try {
+      await axios.delete(`/api/menu/${listingSlug}?itemId=${id}`, { headers: authHeader })
+      setItems((prev) => prev.filter((i) => i._id !== id))
+    } catch (err) { toast.error("Failed to delete item") }
+    setLoading(false)
+  }
+
+  return (
+    <div className="space-y-2">
+      {items.map((item) => (
+        <div key={item._id} className="flex items-center gap-2 bg-secondary border border-secondary-border rounded-xl px-3 py-2.5 text-sm">
+          <span className={clsx("size-2.5 rounded-sm shrink-0", item.dietType === "veg" ? "bg-green-500" : "bg-red-500")} />
+          <span className="flex-1 font-medium">{item.name}</span>
+          <span className="opacity-60">{item.category}</span>
+          <span className="font-semibold">₹{item.price}</span>
+          <button type="button" onClick={() => { setDraft({ ...item }); setShowForm(true) }}><IoMdCheckmark className="size-5 opacity-40" /></button>
+          <button type="button" onClick={() => deleteItem(item._id)}><IoTrashOutline className="size-5 text-red-400" /></button>
+        </div>
+      ))}
+      {showForm ? (
+        <div className="bg-background border border-border rounded-xl p-3 space-y-2">
+          <div className="flex gap-2">
+            <Input label="Name" value={draft.name} onChange={(e) => setDraft((p) => ({ ...p, name: e.target.value }))} labelClassName="flex-1" />
+            <Input label="Price ₹" type="number" value={draft.price} onChange={(e) => setDraft((p) => ({ ...p, price: e.target.value }))} labelClassName="w-24" />
+          </div>
+          <div className="flex gap-2">
+            <Input label="Category" value={draft.category} onChange={(e) => setDraft((p) => ({ ...p, category: e.target.value }))} placeholder="e.g. Starters" labelClassName="flex-1" />
+            <RadioGroup isSmall value={draft.dietType} setValue={(v) => setDraft((p) => ({ ...p, dietType: v }))} options={[{ label: "Veg", value: "veg" }, { label: "Non-Veg", value: "non-veg" }]} />
+          </div>
+          <Input label="Description (optional)" value={draft.description} onChange={(e) => setDraft((p) => ({ ...p, description: e.target.value }))} />
+          <div className="flex gap-2">
+            <button type="button" onClick={saveItem} disabled={loading} className="flex-1 bg-primary text-background py-2 rounded-xl text-sm">
+              {loading ? "Saving..." : "Save Item"}
+            </button>
+            <button type="button" onClick={() => { setShowForm(false); setDraft(BLANK_MENU_ITEM) }} className="px-4 py-2 bg-secondary rounded-xl text-sm">Cancel</button>
+          </div>
+        </div>
+      ) : (
+        <button type="button" onClick={() => setShowForm(true)} className="w-full flex items-center gap-2 justify-center py-2.5 border border-dashed border-secondary-border rounded-xl text-sm opacity-60">
+          <IoAddOutline size={18} /> Add Menu Item
+        </button>
+      )}
+    </div>
+  )
+}
+
+function OffersEditor({ offers, setOffers, listingSlug, loading, setLoading, authHeader, isCreatingNew }) {
+  const [draft, setDraft] = useState(BLANK_OFFER)
+  const [showForm, setShowForm] = useState(false)
+
+  const saveOffer = async () => {
+    if (!draft.title) return toast.error("Title is required")
+    if (isCreatingNew) return toast.error("Save the listing first before adding offers")
+    setLoading(true)
+    try {
+      const { data } = await axios.post(`/api/offer/${listingSlug}`, draft, { headers: authHeader })
+      setOffers((prev) => draft._id ? prev.map((i) => i._id === draft._id ? data : i) : [...prev, data])
+      setDraft(BLANK_OFFER)
+      setShowForm(false)
+      toast.success("Offer saved")
+    } catch (err) { toast.error("Failed to save offer") }
+    setLoading(false)
+  }
+
+  const deleteOffer = async (id) => {
+    setLoading(true)
+    try {
+      await axios.delete(`/api/offer/${listingSlug}?offerId=${id}`, { headers: authHeader })
+      setOffers((prev) => prev.filter((i) => i._id !== id))
+    } catch (err) { toast.error("Failed to delete offer") }
+    setLoading(false)
+  }
+
+  return (
+    <div className="space-y-2">
+      {offers.map((offer) => (
+        <div key={offer._id} className="flex items-start gap-2 bg-secondary border border-secondary-border rounded-xl px-3 py-2.5 text-sm">
+          <div className="flex-1 min-w-0">
+            <span className="font-medium block">{offer.title}</span>
+            {offer.discount && <span className="text-yellow-400 text-xs">{offer.discount}</span>}
+          </div>
+          <button type="button" onClick={() => deleteOffer(offer._id)}><IoTrashOutline className="size-5 text-red-400" /></button>
+        </div>
+      ))}
+      {showForm ? (
+        <div className="bg-background border border-border rounded-xl p-3 space-y-2">
+          <Input label="Title" value={draft.title} onChange={(e) => setDraft((p) => ({ ...p, title: e.target.value }))} />
+          <Input label="Discount (e.g. 20% off)" value={draft.discount} onChange={(e) => setDraft((p) => ({ ...p, discount: e.target.value }))} />
+          <Input label="Description" value={draft.description} onChange={(e) => setDraft((p) => ({ ...p, description: e.target.value }))} />
+          <div className="flex gap-2">
+            <Input label="Valid From" type="date" value={draft.validFrom} onChange={(e) => setDraft((p) => ({ ...p, validFrom: e.target.value }))} labelClassName="flex-1" />
+            <Input label="Valid To" type="date" value={draft.validTo} onChange={(e) => setDraft((p) => ({ ...p, validTo: e.target.value }))} labelClassName="flex-1" />
+          </div>
+          <div className="flex gap-2">
+            <button type="button" onClick={saveOffer} disabled={loading} className="flex-1 bg-primary text-background py-2 rounded-xl text-sm">{loading ? "Saving..." : "Save Offer"}</button>
+            <button type="button" onClick={() => { setShowForm(false); setDraft(BLANK_OFFER) }} className="px-4 py-2 bg-secondary rounded-xl text-sm">Cancel</button>
+          </div>
+        </div>
+      ) : (
+        <button type="button" onClick={() => setShowForm(true)} className="w-full flex items-center gap-2 justify-center py-2.5 border border-dashed border-secondary-border rounded-xl text-sm opacity-60">
+          <IoAddOutline size={18} /> Add Offer
+        </button>
+      )}
+    </div>
+  )
+}
+
+function ReviewModerator({ reviews, setReviews, authHeader }) {
+  const updateStatus = async (reviewId, status) => {
+    try {
+      const { data } = await axios.patch(`/api/review/admin/${reviewId}`, { status }, { headers: authHeader })
+      setReviews((prev) => prev.map((r) => r._id === reviewId ? data.review : r))
+      toast.success(`Review ${status}`)
+    } catch (err) { toast.error("Failed to update review") }
+  }
+
+  const statusColor = { pending: "text-yellow-400", approved: "text-green-400", hidden: "opacity-40 line-through" }
+
+  return (
+    <div className="space-y-2">
+      {reviews.map((r) => (
+        <div key={r._id} className={clsx("bg-secondary border border-secondary-border rounded-xl p-3 text-sm space-y-1", r.status === "hidden" && "opacity-50")}>
+          <div className="flex items-center justify-between">
+            <span className="font-medium">{r.userName || "Anonymous"}</span>
+            <span className={clsx("text-xs font-semibold", statusColor[r.status])}>{r.status}</span>
+          </div>
+          <div className="flex gap-0.5">
+            {[1,2,3,4,5].map((n) => n <= r.rating ? <TiStarFullOutline key={n} size={14} className="text-yellow-400" /> : <TiStarOutline key={n} size={14} className="opacity-30" />)}
+          </div>
+          {r.comment && <p className="opacity-70">{r.comment}</p>}
+          <div className="flex gap-2 pt-1">
+            {r.status !== "approved" && (
+              <button type="button" onClick={() => updateStatus(r._id, "approved")} className="text-xs bg-green-600/20 text-green-400 border border-green-600/30 px-2 py-1 rounded-lg">Approve</button>
+            )}
+            {r.status !== "hidden" && (
+              <button type="button" onClick={() => updateStatus(r._id, "hidden")} className="text-xs bg-red-600/20 text-red-400 border border-red-600/30 px-2 py-1 rounded-lg">Hide</button>
+            )}
+          </div>
+        </div>
+      ))}
     </div>
   )
 }

@@ -20,7 +20,8 @@ import { getWindow } from "@/lib/utils/getWindow"
 import ImageCarousel from "@/components/shared/ImageCarousel"
 import { FiClock } from "react-icons/fi"
 import Spinner from "@/components/shared/Spinner"
-import { TiStarFullOutline } from "react-icons/ti"
+import { TiStarFullOutline, TiStarHalfOutline, TiStarOutline } from "react-icons/ti"
+import { MdLocalOffer } from "react-icons/md"
 import Overlay from "@/components/layout/Overlay"
 import Input from "@/components/shared/Input"
 import { GoArrowRight } from "react-icons/go"
@@ -125,6 +126,15 @@ export default function ListingComponent({ listing, pageUrl }) {
       <div className="px-hr pb-6 space-y-8">
         <h1 className="text-2xl my-6 font-semibold">{listing?.title}</h1>
 
+        {listing?.food?.rating > 0 && (
+          <div className="flex items-center gap-2">
+            <StarRatingDisplay rating={listing.food.rating} />
+            <span className="text-sm opacity-60">
+              {listing.food.rating.toFixed(1)} ({listing.food.reviewCount || 0} review{listing.food.reviewCount !== 1 ? "s" : ""})
+            </span>
+          </div>
+        )}
+
         <div className="space-y-6">
           {listing?.categoryName && listing?.subCategoryName ? (
             <div className="flex items-center gap-4">
@@ -201,6 +211,16 @@ export default function ListingComponent({ listing, pageUrl }) {
           </div>
         )}
 
+        {listing?.food?.openingHours && Object.values(listing.food.openingHours).some((h) => h?.open) && (
+          <OpeningHours hours={listing.food.openingHours} />
+        )}
+
+        {listing?.offers?.length > 0 && <OffersSection offers={listing.offers} />}
+
+        {listing?.menu?.length > 0 && <MenuSection items={listing.menu} />}
+
+        {listing?.type === "food" && <ReviewsSection listing={listing} />}
+
         <div>
           <span className="text-lg font-semibold block mb-5">
             {[areLinksAvailable ? "Connect" : null, listing?.targetSharingCount ? null : "Share"]
@@ -264,6 +284,192 @@ export default function ListingComponent({ listing, pageUrl }) {
             className="!bg-accent-foreground !text-accent !rounded-full !p-4"
             labelCentered={true}
           />
+        </div>
+      )}
+    </div>
+  )
+}
+
+const DAY_LABELS = { mon: "Mon", tue: "Tue", wed: "Wed", thu: "Thu", fri: "Fri", sat: "Sat", sun: "Sun" }
+const DAY_KEYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
+
+function StarRatingDisplay({ rating, size = 16 }) {
+  return (
+    <div className="flex items-center gap-0.5">
+      {[1, 2, 3, 4, 5].map((n) => {
+        if (n <= Math.floor(rating)) return <TiStarFullOutline key={n} size={size} className="text-yellow-400" />
+        if (n - rating < 1 && n - rating > 0) return <TiStarHalfOutline key={n} size={size} className="text-yellow-400" />
+        return <TiStarOutline key={n} size={size} className="opacity-30" />
+      })}
+    </div>
+  )
+}
+
+function OpeningHours({ hours }) {
+  const today = new Date().toLocaleString("en-US", { weekday: "short" }).toLowerCase().slice(0, 3)
+  return (
+    <div>
+      <span className="text-lg font-semibold block mb-3">Opening Hours</span>
+      <div className="bg-secondary border border-secondary-border rounded-xl overflow-hidden">
+        {DAY_KEYS.filter((d) => hours[d]?.open).map((day) => (
+          <div
+            key={day}
+            className={clsx(
+              "flex justify-between px-4 py-2.5 border-b border-secondary-border last:border-0 text-sm",
+              day === today ? "bg-primary/10 font-semibold" : ""
+            )}
+          >
+            <span className={day === today ? "text-primary" : "opacity-70"}>{DAY_LABELS[day]}</span>
+            <span className="opacity-80">{hours[day].open}{hours[day].close ? ` – ${hours[day].close}` : ""}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function OffersSection({ offers }) {
+  return (
+    <div>
+      <span className="text-lg font-semibold block mb-3">Offers</span>
+      <div className="scroll-container flex gap-3">
+        {offers.map((offer) => (
+          <div key={offer._id} className="scroll-element shrink-0 bg-secondary border border-secondary-border rounded-xl p-4 space-y-1 min-w-[200px]">
+            <div className="flex items-start gap-2">
+              <MdLocalOffer className="size-5 text-yellow-400 shrink-0 mt-0.5" />
+              <span className="font-semibold text-sm">{offer.title}</span>
+            </div>
+            {offer.discount && (
+              <span className="inline-block bg-yellow-400/10 text-yellow-400 text-xs font-bold px-2 py-0.5 rounded-full border border-yellow-400/20">
+                {offer.discount}
+              </span>
+            )}
+            {offer.description && <p className="text-xs opacity-60">{offer.description}</p>}
+            {offer.validTo && (
+              <p className="text-xs opacity-40">Valid till {new Date(offer.validTo).toLocaleDateString("en-IN")}</p>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function MenuSection({ items }) {
+  const grouped = items.reduce((acc, item) => {
+    const cat = item.category || "Menu"
+    if (!acc[cat]) acc[cat] = []
+    acc[cat].push(item)
+    return acc
+  }, {})
+
+  return (
+    <div>
+      <span className="text-lg font-semibold block mb-3">Menu</span>
+      <div className="space-y-4">
+        {Object.entries(grouped).map(([cat, catItems]) => (
+          <div key={cat}>
+            <span className="text-sm font-semibold opacity-50 uppercase tracking-widest block mb-2">{cat}</span>
+            <div className="bg-secondary border border-secondary-border rounded-xl overflow-hidden">
+              {catItems.map((item, idx) => (
+                <div key={item._id} className={clsx("flex items-center gap-3 px-4 py-3 text-sm", idx < catItems.length - 1 && "border-b border-secondary-border")}>
+                  <span className={clsx("size-3 rounded-sm border shrink-0", item.dietType === "veg" ? "border-green-500" : "border-red-500")}>
+                    <span className={clsx("block size-1.5 rounded-full m-0.5", item.dietType === "veg" ? "bg-green-500" : "bg-red-500")} />
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <span className="font-medium block">{item.name}</span>
+                    {item.description && <p className="text-xs opacity-50 truncate">{item.description}</p>}
+                  </div>
+                  <span className="font-semibold shrink-0">₹{item.price}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function ReviewsSection({ listing }) {
+  const [reviews, setReviews] = useState(listing.reviews || [])
+  const [form, setForm] = useState({ rating: 0, userName: "", comment: "" })
+  const [submitting, setSubmitting] = useState(false)
+  const [submitted, setSubmitted] = useState(false)
+
+  const setField = (f) => (e) => setForm((prev) => ({ ...prev, [f]: e.target.value }))
+
+  const handleSubmit = async () => {
+    if (!form.rating) return toast.error("Please select a rating")
+    setSubmitting(true)
+    try {
+      await axios.post(`/api/review/${listing.slug}`, form)
+      setSubmitted(true)
+      toast.success("Review submitted! It will appear after approval.")
+      setForm({ rating: 0, userName: "", comment: "" })
+    } catch (err) {
+      toast.error(err.response?.data?.error || "Failed to submit review")
+    }
+    setSubmitting(false)
+  }
+
+  return (
+    <div>
+      <span className="text-lg font-semibold block mb-3">Reviews</span>
+
+      {reviews.length > 0 ? (
+        <div className="space-y-3 mb-6">
+          {reviews.map((r) => (
+            <div key={r._id} className="bg-secondary border border-secondary-border rounded-xl p-4 space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-semibold">{r.userName || "Anonymous"}</span>
+                <StarRatingDisplay rating={r.rating} size={14} />
+              </div>
+              {r.comment && <p className="text-sm opacity-70">{r.comment}</p>}
+              <p className="text-xs opacity-40">{new Date(r.createdAt).toLocaleDateString("en-IN")}</p>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className="text-sm opacity-50 mb-4">No reviews yet. Be the first to review!</p>
+      )}
+
+      {submitted ? (
+        <p className="text-sm opacity-60 bg-secondary border border-secondary-border rounded-xl p-4">
+          Thanks for your review! It will appear after admin approval.
+        </p>
+      ) : (
+        <div className="bg-secondary border border-secondary-border rounded-xl p-4 space-y-3">
+          <span className="text-sm font-semibold block">Write a Review</span>
+          <div className="flex gap-1">
+            {[1, 2, 3, 4, 5].map((n) => (
+              <button key={n} onClick={() => setForm((prev) => ({ ...prev, rating: n }))}>
+                {n <= form.rating ? (
+                  <TiStarFullOutline size={28} className="text-yellow-400" />
+                ) : (
+                  <TiStarOutline size={28} className="opacity-30" />
+                )}
+              </button>
+            ))}
+          </div>
+          <Input label="Your name (optional)" value={form.userName} onChange={setField("userName")} />
+          <div>
+            <label className="text-sm opacity-60 block mb-1">Comment (optional)</label>
+            <textarea
+              rows={3}
+              value={form.comment}
+              onChange={setField("comment")}
+              className="w-full bg-background border border-border rounded-xl px-3 py-2 text-sm outline-none resize-none"
+            />
+          </div>
+          <button
+            disabled={submitting || !form.rating}
+            onClick={handleSubmit}
+            className="input-component justify-center bg-white text-black w-full text-center disabled:opacity-40"
+          >
+            <span>{submitting ? "Submitting..." : "Submit Review"}</span>
+            <GoArrowRight className="size-4.5" />
+          </button>
         </div>
       )}
     </div>

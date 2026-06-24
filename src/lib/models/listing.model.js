@@ -36,6 +36,27 @@ const listingSchema = new Schema(
       label: { type: String },
       url: { type: String },
     },
+    food: {
+      cuisines: [{ type: String }],
+      dietType: { type: String, enum: ["veg", "non-veg", "both"] },
+      priceRange: {
+        min: { type: Number },
+        max: { type: Number },
+        avgCostForTwo: { type: Number },
+      },
+      openingHours: {
+        mon: { open: { type: String }, close: { type: String } },
+        tue: { open: { type: String }, close: { type: String } },
+        wed: { open: { type: String }, close: { type: String } },
+        thu: { open: { type: String }, close: { type: String } },
+        fri: { open: { type: String }, close: { type: String } },
+        sat: { open: { type: String }, close: { type: String } },
+        sun: { open: { type: String }, close: { type: String } },
+      },
+      rating: { type: Number, min: 0, max: 5, default: 0 },
+      reviewCount: { type: Number, default: 0 },
+      isFeatured: { type: Boolean, default: false },
+    },
   },
   {
     timestamps: {
