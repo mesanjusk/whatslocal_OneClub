@@ -2,69 +2,83 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
+import { motion, AnimatePresence } from "framer-motion"
+import Image from "next/image"
 
 export default function SplashScreen() {
   const router = useRouter()
-  const [leaving, setLeaving] = useState(false)
+  const [visible, setVisible] = useState(true)
 
   useEffect(() => {
-    const t1 = setTimeout(() => setLeaving(true), 2200)
+    const t1 = setTimeout(() => setVisible(false), 2200)
     const t2 = setTimeout(() => router.replace("/home"), 2700)
     return () => { clearTimeout(t1); clearTimeout(t2) }
   }, [router])
 
   return (
-    <div
-      style={{
-        position: "fixed",
-        inset: 0,
-        zIndex: 9999,
-        background: "hsl(240 10% 3.9%)",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        transition: "opacity 0.5s ease",
-        opacity: leaving ? 0 : 1,
-      }}
-    >
-      {/* Main text */}
-      <div style={{ textAlign: "center", padding: "0 2rem", animation: "splashIn 0.6s ease forwards" }}>
-        <p style={{ color: "rgba(255,255,255,0.6)", fontSize: "1.2rem", fontWeight: 600, margin: 0, letterSpacing: "0.01em" }}>
-          Hello Gondia,
-        </p>
-        <p style={{ color: "#fff", fontSize: "3rem", fontWeight: 900, margin: "4px 0 0", lineHeight: 1.1, letterSpacing: "-0.02em" }}>
-          Let&apos;s order.
-        </p>
-      </div>
-
-      {/* Bouncing dots */}
-      <div style={{ position: "absolute", bottom: "4rem", display: "flex", gap: "8px" }}>
-        {[0, 1, 2].map((n) => (
-          <span
-            key={n}
-            style={{
-              width: 7,
-              height: 7,
-              borderRadius: "50%",
-              background: "rgba(255,255,255,0.35)",
-              display: "block",
-              animation: `dotBounce 1.2s ${n * 0.2}s ease-in-out infinite`,
-            }}
+    <AnimatePresence>
+      {visible && (
+        <motion.div
+          key="splash"
+          initial={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.5, ease: "easeInOut" }}
+          className="fixed inset-0 z-[9999] flex flex-col items-center justify-center overflow-hidden"
+        >
+          {/* Gradient background with subtle scale */}
+          <motion.div
+            className="absolute inset-0 bg-gradient-to-br from-orange-400 via-pink-400 to-purple-500"
+            initial={{ scale: 1.05 }}
+            animate={{ scale: 1 }}
+            transition={{ duration: 2.5, ease: "easeOut" }}
           />
-        ))}
-      </div>
 
-      <style>{`
-        @keyframes splashIn {
-          from { opacity: 0; transform: translateY(20px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes dotBounce {
-          0%, 80%, 100% { transform: scale(1); opacity: 0.35; }
-          40%            { transform: scale(1.6); opacity: 1; }
-        }
-      `}</style>
-    </div>
+          {/* Content */}
+          <div className="relative z-10 flex flex-col items-center gap-6">
+            {/* Logo */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.5, ease: "easeOut" }}
+            >
+              <Image
+                src="/logo.png"
+                alt="WhatsLocal"
+                width={96}
+                height={96}
+                className="rounded-2xl shadow-xl"
+                onError={(e) => { e.currentTarget.style.display = "none" }}
+              />
+            </motion.div>
+
+            {/* Heading */}
+            <motion.h1
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.5, ease: "easeOut" }}
+              className="text-5xl font-black text-black tracking-tight"
+            >
+              Hello Gondia!!
+            </motion.h1>
+
+            {/* Subtext with animated arrow */}
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 1.2, ease: "easeOut" }}
+              className="text-xl font-medium text-black/80 flex items-center gap-1"
+            >
+              Let&apos;s order
+              <motion.span
+                animate={{ x: [0, 6, 0] }}
+                transition={{ duration: 1, repeat: Infinity, ease: "easeInOut", delay: 1.8 }}
+              >
+                →
+              </motion.span>
+            </motion.p>
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   )
 }
