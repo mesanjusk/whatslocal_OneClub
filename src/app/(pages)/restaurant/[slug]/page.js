@@ -140,31 +140,41 @@ export default function RestaurantPage() {
     return () => observer.disconnect()
   }, [categories.length])
 
+  // Swap these with your own Cloudinary URLs when ready
   const PHOTOS = [
-    "https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=400&q=80",
-    "https://images.unsplash.com/photo-1601050690597-df0568f70950?w=400&q=80",
-    "https://images.unsplash.com/photo-1585937421612-70a008356fbe?w=400&q=80",
+    "https://images.unsplash.com/photo-1631452180519-c014fe946bc7?w=800&q=85", // kadai paneer (hero)
+    "https://images.unsplash.com/photo-1567188040759-fb8a883dc6d6?w=400&q=80", // dal makhani
+    "https://images.unsplash.com/photo-1596797038530-2c107229654b?w=400&q=80", // roti/naan
+    "https://images.unsplash.com/photo-1585937421612-70a008356fbe?w=400&q=80", // rice dish
   ]
 
   return (
     <div style={{ background: "#fff", minHeight: "100vh", paddingBottom: 100 }}>
 
-      {/* Header photos */}
-      <div style={{ position: "relative", height: 220, overflow: "hidden" }}>
-        <div style={{ display: "flex", height: "100%", gap: 2 }}>
-          <img src={PHOTOS[0]} alt="" style={{ flex: 2, objectFit: "cover", height: "100%" }} />
-          <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 2 }}>
-            <img src={PHOTOS[1]} alt="" style={{ flex: 1, objectFit: "cover", width: "100%" }} />
-            <img src={PHOTOS[2]} alt="" style={{ flex: 1, objectFit: "cover", width: "100%" }} />
-          </div>
-        </div>
+      {/* 4-photo header grid */}
+      <div style={{ position: "relative", height: 240, overflow: "hidden",
+        display: "grid", gridTemplateColumns: "2fr 1fr", gridTemplateRows: "1fr 1fr", gap: 2 }}>
+        {/* Large hero photo spanning both rows */}
+        <img src={PHOTOS[0]} alt="Kadai Paneer"
+          style={{ gridColumn: "1", gridRow: "1 / 3", objectFit: "cover", width: "100%", height: "100%" }} />
+        {/* Two small photos stacked */}
+        <img src={PHOTOS[1]} alt="Dal Makhani"
+          style={{ objectFit: "cover", width: "100%", height: "100%" }} />
+        <img src={PHOTOS[2]} alt="Roti"
+          style={{ objectFit: "cover", width: "100%", height: "100%" }} />
         {/* Back button */}
         <button onClick={() => router.back()}
           style={{ position: "absolute", top: 16, left: 16, background: "rgba(255,255,255,0.95)",
             border: "none", borderRadius: "50%", width: 36, height: 36, cursor: "pointer",
             display: "flex", alignItems: "center", justifyContent: "center",
-            boxShadow: "0 2px 8px rgba(0,0,0,0.15)" }}>
+            boxShadow: "0 2px 8px rgba(0,0,0,0.15)", zIndex: 10 }}>
           <LuArrowLeft size={18} />
+        </button>
+        {/* "See all photos" pill */}
+        <button style={{ position: "absolute", bottom: 12, right: 12,
+          background: "rgba(0,0,0,0.65)", color: "#fff", border: "none", borderRadius: 20,
+          fontSize: 11, fontWeight: 600, padding: "5px 12px", cursor: "pointer", zIndex: 10 }}>
+          See all photos
         </button>
       </div>
 

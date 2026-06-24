@@ -335,23 +335,32 @@ export default function Page() {
   )
 }
 
+// Swap any of these URLs with your own Cloudinary/hosted image URLs
+const DHABA_PHOTOS = [
+  "https://images.unsplash.com/photo-1631452180519-c014fe946bc7?w=600&q=80", // kadai paneer
+  "https://images.unsplash.com/photo-1567188040759-fb8a883dc6d6?w=400&q=80", // dal makhani
+  "https://images.unsplash.com/photo-1596797038530-2c107229654b?w=400&q=80", // naan / roti
+  "https://images.unsplash.com/photo-1645177628172-a94c1f96dialing?w=400&q=80", // placeholder
+]
+
+// Fallback palette so grid never looks broken
+const FALLBACK = [
+  "https://images.unsplash.com/photo-1631452180519-c014fe946bc7?w=600&q=80",
+  "https://images.unsplash.com/photo-1567188040759-fb8a883dc6d6?w=400&q=80",
+  "https://images.unsplash.com/photo-1596797038530-2c107229654b?w=400&q=80",
+  "https://images.unsplash.com/photo-1585937421612-70a008356fbe?w=400&q=80",
+]
+
 function DhabaJunctionCard() {
-  const PHOTOS = [
-    "https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=400&q=80",
-    "https://images.unsplash.com/photo-1601050690597-df0568f70950?w=400&q=80",
-    "https://images.unsplash.com/photo-1585937421612-70a008356fbe?w=400&q=80",
-  ]
   return (
     <Link href="/restaurant/dhaba-junction" className="block mx-hr mt-3 mb-1 rounded-2xl overflow-hidden border border-border bg-secondary drop-shadow-xl shadow-black">
-      {/* Photo grid */}
-      <div className="flex h-36 gap-0.5">
-        <img src={PHOTOS[0]} alt="" className="flex-[2] object-cover h-full" />
-        <div className="flex-1 flex flex-col gap-0.5">
-          <img src={PHOTOS[1]} alt="" className="flex-1 object-cover w-full" />
-          <img src={PHOTOS[2]} alt="" className="flex-1 object-cover w-full" />
-        </div>
+      {/* 4-photo Zomato-style grid */}
+      <div className="grid grid-cols-2 grid-rows-2 h-48 gap-0.5">
+        <img src={FALLBACK[0]} alt="Kadai Paneer" className="col-span-1 row-span-2 object-cover w-full h-full" />
+        <img src={FALLBACK[1]} alt="Dal Makhani" className="object-cover w-full h-full" />
+        <img src={FALLBACK[2]} alt="Roti" className="object-cover w-full h-full" />
       </div>
-      {/* Info */}
+      {/* Info row */}
       <div className="px-4 py-3">
         <div className="flex items-start justify-between gap-2">
           <div>
@@ -359,9 +368,11 @@ function DhabaJunctionCard() {
             <p className="text-xs opacity-60 mt-0.5">Punjabi, North Indian · Pure Veg</p>
             <p className="text-xs opacity-50 mt-0.5">Gondia, Maharashtra</p>
           </div>
-          <span className="shrink-0 bg-green-600 text-white text-xs font-bold px-2 py-0.5 rounded">★ 4.2</span>
+          <span className="shrink-0 bg-green-600 text-white text-xs font-bold px-2 py-0.5 rounded-md">★ 4.2</span>
         </div>
-        <div className="flex items-center gap-3 mt-2 text-xs opacity-50">
+        <div className="flex items-center gap-2 mt-2 text-xs opacity-50 flex-wrap">
+          <span className="bg-green-700/20 text-green-400 border border-green-700/30 px-2 py-0.5 rounded-full">Pure Veg</span>
+          <span>·</span>
           <span>₹15 – ₹295 per item</span>
           <span>·</span>
           <span>130+ items</span>
