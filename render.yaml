@@ -3,9 +3,12 @@ services:
     name: whatslocal
     env: node
     region: singapore
-    buildCommand: npm install --include=dev && npm run build
+    branch: main
+    buildCommand: npm ci --include=dev && npm run build
     startCommand: npm start
     envVars:
+      - key: NODE_VERSION
+        value: "22"
       - key: NODE_ENV
         value: production
       - key: MONGO_URI
