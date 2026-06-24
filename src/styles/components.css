@@ -1,0 +1,11 @@
+@layer components {
+
+	.listing-image-container::before {
+		@apply content-[""] absolute w-full h-full left-0 top-0 blur-[10rem] bg-cover bg-no-repeat -z-[1];
+	}
+
+	.input-component {
+		@apply !h-auto bg-background border border-border rounded-lg flex items-center gap-4 !px-4 !py-3 outline-2 outline-offset-2 outline-transparent focus-within:bg-secondary focus-within:outline-white !text-base;
+	}
+
+}

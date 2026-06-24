@@ -1,0 +1,59 @@
+.text-rotator span:nth-child(1) {
+	animation: rotateText1 10s linear infinite;
+	animation-delay: 0s;
+}
+
+.text-rotator span:nth-child(2) {
+	animation: rotateText2 10s linear infinite;
+}
+
+@keyframes rotateText1 {
+	0%,
+	60% {
+		/* 0 - 6 sec */
+		top: 0;
+		opacity: 1;
+	}
+	65% {
+		/* 6.5 sec */
+		top: -100%;
+		opacity: 1;
+	}
+	70% {
+		/* 6.5 sec */
+		top: -100%;
+		opacity: 0;
+	}
+	75% {
+		/* 6.5 sec */
+		top: 100%;
+		opacity: 0;
+	}
+	80%, 95% {
+		/* 7 - 9.5 sec */
+		top: 100%;
+		opacity: 1;
+	}
+	100% {
+		/* 10 sec */
+		top: 0;
+		opacity: 1;
+	}
+}
+
+@keyframes rotateText2 {
+	0%,
+	60% {
+		/* 0 - 6 sec */
+		top: 100%;
+	}
+	65%,
+	95% {
+		/* 6.5 - 9.5 sec */
+		top: 0;
+	}
+	100% {
+		/* 10 sec */
+		top: -100%;
+	}
+}
