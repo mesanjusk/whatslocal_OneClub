@@ -431,12 +431,18 @@ export function pickWinner(results) {
   }, results[0])
 }
 
+const capitalize = (s) => s.charAt(0).toUpperCase() + s.slice(1)
+
 export function getResults(query) {
   const q = query.toLowerCase().trim()
   if (!q) return null
-  if (DISHES_DB[q]) return { query: q, results: DISHES_DB[q] }
+  const tag = (key, rows) => ({
+    query: key,
+    results: rows.map(r => ({ ...r, dish: capitalize(key) })),
+  })
+  if (DISHES_DB[q]) return tag(q, DISHES_DB[q])
   for (const key of Object.keys(DISHES_DB)) {
-    if (key.includes(q) || q.includes(key)) return { query: key, results: DISHES_DB[key] }
+    if (key.includes(q) || q.includes(key)) return tag(key, DISHES_DB[key])
   }
   return { query: q, results: [] }
 }
