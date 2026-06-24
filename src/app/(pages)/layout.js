@@ -9,29 +9,14 @@ import TrackVisitor from "@/components/utils/TrackVisitor"
 import StoreProvider from "./StoreProvider"
 import { ToastContainer } from "react-toastify"
 
-export const viewport = {
-  width: "device-width",
-  userScalable: false,
-  initialScale: 1,
-  maximumScale: 1,
-}
 
-export const metadata = {
-  title: "WhatsLocal",
-  description: "Experience the Pulse of Your Neighborhood",
-}
-
-export default function RootLayout({ children }) {
+export default function PagesLayout({ children }) {
   return (
-    <html lang="en">
-      <body className={`max-w-lg overflow-x-hidden mx-auto min-h-dvh flex flex-col relative`}>
-        <StoreProvider>
-          <Header />
-          {children}
-          <TrackVisitor />
-        </StoreProvider>
-        <ToastContainer theme="dark" position="bottom-center" />
-      </body>
-    </html>
+    <StoreProvider>
+      <Header />
+      {children}
+      <TrackVisitor />
+      <ToastContainer theme="dark" position="bottom-center" />
+    </StoreProvider>
   )
 }

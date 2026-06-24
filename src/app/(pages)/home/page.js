@@ -105,10 +105,8 @@ export default function Page() {
         block: "nearest",
         inline: "center",
       })
-
       const response = await axios.get(`/api/listing/sub_categories/${_id}`)
       setListings(response.data)
-
       if (isManualCall) setSelectedCategory(categories.find((i) => i._id === _id))
       else if (navigationState.subCategory) {
         for (const subCat of response.data) {
@@ -230,7 +228,7 @@ export default function Page() {
         </div>
       </div>
 
-      {/* Category tabs — hidden when search active */}
+      {/* Category tabs */}
       {!isSearchActive && (
         <div className="px-hr mt-1 mb-4 no-scrollbar flex gap-2 items-center overflow-auto whitespace-nowrap">
           {categories?.length > 0 ? (
@@ -240,7 +238,7 @@ export default function Page() {
                 id={i._id}
                 className={clsx(
                   "rounded-full border border-secondary-border py-2 px-3 font-medium",
-                  selectedCategory && selectedCategory._id === i._id ? "bg-primary text-secondary" : "bg-secondary"
+                  selectedCategory?._id === i._id ? "bg-primary text-secondary" : "bg-secondary"
                 )}
                 onClick={() => fetchListings(i._id)}
               >
@@ -248,13 +246,11 @@ export default function Page() {
               </button>
             ))
           ) : (
-            <>
-              {[0, 1, 2].map((n) => (
-                <span key={n} className="bg-secondary rounded-full py-2 px-3 text-base">
-                  <span className="block h-6 w-[4.5em]" />
-                </span>
-              ))}
-            </>
+            [0, 1, 2].map((n) => (
+              <span key={n} className="bg-secondary rounded-full py-2 px-3 text-base">
+                <span className="block h-6 w-[4.5em]" />
+              </span>
+            ))
           )}
         </div>
       )}
@@ -272,11 +268,13 @@ export default function Page() {
             <p className="text-center opacity-50 py-10">No restaurants found. Try a different search.</p>
           ) : (
             <>
-              <p className="text-sm opacity-50 mb-3">{searchResults?.length} restaurant{searchResults?.length !== 1 ? "s" : ""} found</p>
+              <p className="text-sm opacity-50 mb-3">
+                {searchResults?.length} restaurant{searchResults?.length !== 1 ? "s" : ""} found
+              </p>
               <div className="grid grid-cols-2 gap-3">
                 {searchResults?.map((i) => (
                   <Link key={i._id} href={`/${i.category}/${i.subCategory}/${i.slug}`}>
-                    <ListingCard i={i} categorySlug={null} subCatSlug={null} />
+                    <ListingCard i={i} />
                   </Link>
                 ))}
               </div>
@@ -287,8 +285,8 @@ export default function Page() {
         <>
           {listings?.length > 0 ? (
             listings
-              ?.filter((subCat) => subCat?.listings?.length > 0)
-              ?.map((subCat) => (
+              .filter((subCat) => subCat?.listings?.length > 0)
+              .map((subCat) => (
                 <div key={subCat._id} id={subCat._id}>
                   <span className="px-hr block mt-8 mb-6 font-bold text-xl">{subCat.title}</span>
                   <div className="scroll-container flex gap-2 px-hr w-full">
@@ -320,7 +318,10 @@ export default function Page() {
           )}
 
           {selectedCategory?.connectButton && (
-            <Link href={selectedCategory.connectButton.url} className="my-8 flex gap-1 items-center justify-center underline opacity-60">
+            <Link
+              href={selectedCategory.connectButton.url}
+              className="my-8 flex gap-1 items-center justify-center underline opacity-60"
+            >
               <span>{selectedCategory.connectButton.text}</span>
               <FiArrowUpRight className="size-4" />
             </Link>
