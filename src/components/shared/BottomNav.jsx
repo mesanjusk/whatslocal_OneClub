@@ -3,13 +3,13 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
-import { LuShoppingCart, LuHistory, LuThumbsUp, LuLayoutGrid } from "react-icons/lu"
+import { LuShoppingCart, LuHistory, LuThumbsUp, LuHome } from "react-icons/lu"
 
 const NAV_ITEMS = [
+  { label: "Home",        href: "/home",        icon: LuHome },
   { label: "Recommended", href: "/recommended", icon: LuThumbsUp },
   { label: "Cart",        href: "/cart",        icon: LuShoppingCart },
   { label: "History",     href: "/history",     icon: LuHistory },
-  { label: "4",           href: "/four",        icon: LuLayoutGrid },
 ]
 
 export default function BottomNav() {
