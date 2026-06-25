@@ -20,14 +20,14 @@ import clsx from "clsx"
 
 // ── Food grid items for default state ────────────────────────────────────────
 const FOOD_GRID = [
-  { label: "Biryani",  query: "biryani",  sub: "Fragrant & hearty",  image: "https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=600&q=80" },
-  { label: "Paneer",   query: "paneer",   sub: "Rich & creamy",      image: "https://images.unsplash.com/photo-1631452180519-c014fe946bc7?w=600&q=80" },
-  { label: "Dosa",     query: "dosa",     sub: "Crispy & authentic", image: "https://images.unsplash.com/photo-1668236543090-82eba5ee5976?w=600&q=80" },
-  { label: "Burger",   query: "burger",   sub: "Crispy & bold",      image: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=600&q=80" },
-  { label: "Noodles",  query: "noodles",  sub: "Wok-tossed",         image: "https://images.unsplash.com/photo-1617093727343-374698b1b08d?w=600&q=80" },
-  { label: "Pizza",    query: "pizza",    sub: "Cheesy & crisp",     image: "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=600&q=80" },
-  { label: "Idli",     query: "idli",     sub: "Soft & tangy",       image: "https://images.unsplash.com/photo-1589301760014-d929f3979dbc?w=600&q=80" },
-  { label: "Desserts", query: "desserts", sub: "Sweet treats",       image: "https://images.unsplash.com/photo-1601303516534-3b50cba4b08a?w=600&q=80" },
+  { label: "Biryani",  query: "biryani",  image: "https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=600&q=80" },
+  { label: "Paneer",   query: "paneer",   image: "https://images.unsplash.com/photo-1631452180519-c014fe946bc7?w=600&q=80" },
+  { label: "Dosa",     query: "dosa",     image: "https://images.unsplash.com/photo-1668236543090-82eba5ee5976?w=600&q=80" },
+  { label: "Burger",   query: "burger",   image: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=600&q=80" },
+  { label: "Noodles",  query: "noodles",  image: "https://images.unsplash.com/photo-1617093727343-374698b1b08d?w=600&q=80" },
+  { label: "Pizza",    query: "pizza",    image: "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=600&q=80" },
+  { label: "Idli",     query: "idli",     image: "https://images.unsplash.com/photo-1589301760014-d929f3979dbc?w=600&q=80" },
+  { label: "Desserts", query: "desserts", image: "https://images.unsplash.com/photo-1601303516534-3b50cba4b08a?w=600&q=80" },
 ]
 
 // ── Stars ─────────────────────────────────────────────────────────────────────
@@ -191,7 +191,18 @@ function RestaurantRow({ item, rank, isWinner, allItems }) {
         </div>
       </button>
 
-      {/* Expanded panel */}
+      {/* Cart + View Menu — always visible */}
+      <div className="flex items-center gap-2 px-4 pb-3" onClick={e => e.stopPropagation()}>
+        <CartControl item={item} restaurantSlug={slug} restaurantName={item.restaurant} />
+        <button
+          onClick={() => router.push(`/restaurant/${slug}`)}
+          className="flex items-center gap-1 text-xs font-semibold text-[#e23744] px-3 py-2 rounded-xl border border-[#e23744]/30 bg-white hover:bg-[#fff5f5] transition-colors shrink-0"
+        >
+          View Menu <LuArrowRight size={11} />
+        </button>
+      </div>
+
+      {/* Expanded panel — insights only */}
       <AnimatePresence initial={false}>
         {open && (
           <motion.div key="panel"
@@ -201,32 +212,18 @@ function RestaurantRow({ item, rank, isWinner, allItems }) {
             transition={{ duration: 0.26, ease: [0.4, 0, 0.2, 1] }}
             className="overflow-hidden"
           >
-            <div className="border-t border-gray-100 px-4 py-3 space-y-3 bg-gray-50/50">
-              {/* Insights */}
-              <ul className="space-y-1.5">
-                {item.insights.slice(0, 3).map((ins, i) => (
-                  <li key={i} className="flex items-start gap-2 text-[12px] text-gray-600 leading-relaxed">
-                    <span className="text-[#e23744] font-black mt-0.5 shrink-0">›</span>
-                    {ins}
-                  </li>
-                ))}
-                {item.cons?.[0] && (
-                  <li className="flex items-start gap-2 text-[11px] text-gray-400 border-t border-gray-200 pt-1.5">
-                    <span className="shrink-0 mt-0.5">⚠</span> {item.cons[0]}
-                  </li>
-                )}
-              </ul>
-
-              {/* Actions */}
-              <div className="flex items-center gap-2 pt-0.5">
-                <CartControl item={item} restaurantSlug={slug} restaurantName={item.restaurant} />
-                <button
-                  onClick={() => router.push(`/restaurant/${slug}`)}
-                  className="flex items-center gap-1 text-xs font-semibold text-[#e23744] px-3 py-2 rounded-xl border border-[#e23744]/30 bg-white hover:bg-[#fff5f5] transition-colors"
-                >
-                  View Menu <LuArrowRight size={11} />
-                </button>
-              </div>
+            <div className="border-t border-gray-100 px-4 py-3 space-y-1.5 bg-gray-50/50">
+              {item.insights.slice(0, 3).map((ins, i) => (
+                <div key={i} className="flex items-start gap-2 text-[12px] text-gray-600 leading-relaxed">
+                  <span className="text-[#e23744] font-black mt-0.5 shrink-0">›</span>
+                  {ins}
+                </div>
+              ))}
+              {item.cons?.[0] && (
+                <div className="flex items-start gap-2 text-[11px] text-gray-400 border-t border-gray-200 pt-1.5">
+                  <span className="shrink-0 mt-0.5">⚠</span> {item.cons[0]}
+                </div>
+              )}
             </div>
           </motion.div>
         )}
@@ -458,7 +455,9 @@ export default function RecommendedPage() {
 
         {/* Default state: food grid */}
         {!hasContent && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}
+            className="space-y-3">
+            <p className="font-bold text-gray-800 text-[15px]">What are you feeling today?</p>
             <div className="grid grid-cols-2 gap-3">
               {FOOD_GRID.map((item, i) => (
                 <motion.button
@@ -473,10 +472,9 @@ export default function RecommendedPage() {
                 >
                   <img src={item.image} alt={item.label}
                     className="w-full h-full object-cover" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/10 to-transparent" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
                   <div className="absolute bottom-0 left-0 px-3 py-2.5">
                     <p className="font-black text-white text-[15px] leading-tight capitalize">{item.label}</p>
-                    <p className="text-[10px] text-white/70 font-medium">{item.sub}</p>
                   </div>
                 </motion.button>
               ))}
