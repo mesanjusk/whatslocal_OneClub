@@ -6,13 +6,16 @@ import { NextResponse } from "next/server"
 export const POST = async (req) => {
   try {
     await connectToDB()
-    const { email, password } = await req.json()
+    const { email, mobile, password } = await req.json()
+    const identifier = email || mobile
 
-    if (!email || !password) {
-      return NextResponse.json({ error: "Email and password are required" }, { status: 400 })
+    if (!identifier || !password) {
+      return NextResponse.json({ error: "Mobile/email and password are required" }, { status: 400 })
     }
 
-    const user = await userModel.findOne({ email: email.toLowerCase() })
+    const user = await userModel.findOne({
+      $or: [{ email: identifier.toLowerCase() }, { phone: identifier }],
+    })
     if (!user) {
       return NextResponse.json({ error: "Invalid email or password" }, { status: 401 })
     }

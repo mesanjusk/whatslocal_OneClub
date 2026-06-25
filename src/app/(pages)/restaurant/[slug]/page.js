@@ -4,7 +4,9 @@ import { useEffect, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import axios from "axios"
 import { motion, AnimatePresence } from "framer-motion"
-import { LuArrowLeft, LuSearch, LuShoppingCart, LuMinus, LuPlus, LuX } from "react-icons/lu"
+import { LuArrowLeft, LuSearch, LuShoppingCart, LuMinus, LuPlus, LuX, LuHeart, LuSend, LuStar } from "react-icons/lu"
+import { toast } from "react-toastify"
+import { toggleFavourite, isFavourite } from "@/app/(pages)/favourites/page"
 import { useAppDispatch, useAppSelector } from "@/lib/store/hooks"
 import {
   addItem, removeItem,
@@ -217,6 +219,195 @@ function MenuItem({ item, slug, restaurantName }) {
   )
 }
 
+// ── Star selector ─────────────────────────────────────────────────────────────
+function StarSelector({ value, onChange }) {
+  return (
+    <div className="flex gap-1">
+      {[1, 2, 3, 4, 5].map(n => (
+        <button key={n} type="button" onClick={() => onChange(n)}>
+          <LuStar size={24}
+            fill={n <= value ? "#facc15" : "none"}
+            strokeWidth={n <= value ? 0 : 1.5}
+            style={{ color: n <= value ? "#facc15" : "#d1d5db" }} />
+        </button>
+      ))}
+    </div>
+  )
+}
+
+// ── Reviews section ────────────────────────────────────────────────────────────
+function ReviewsSection({ slug }) {
+  const [reviews, setReviews]     = useState([])
+  const [form, setForm]           = useState({ userName: "", rating: 0, comment: "" })
+  const [submitting, setSubmitting] = useState(false)
+  const [submitted, setSubmitted] = useState(false)
+
+  useEffect(() => {
+    axios.get(`/api/review/${slug}`).then(r => setReviews(r.data)).catch(() => {})
+  }, [slug])
+
+  const avg = reviews.length ? (reviews.reduce((s, r) => s + r.rating, 0) / reviews.length).toFixed(1) : null
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    if (!form.rating) { toast.error("Please select a star rating"); return }
+    setSubmitting(true)
+    try {
+      await axios.post(`/api/review/${slug}`, form)
+      setSubmitted(true)
+      toast.success("Review submitted! It will appear after approval.")
+    } catch {
+      toast.error("Could not submit review. Try again.")
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <div style={{ padding: "20px 16px", borderTop: "8px solid #f8f8f8" }}>
+      {/* Header */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+        <h2 style={{ fontSize: 17, fontWeight: 800, color: "#1c1c1c", margin: 0 }}>Reviews</h2>
+        {avg && (
+          <span style={{ background: "#48c479", color: "#fff", fontWeight: 700,
+            fontSize: 13, borderRadius: 6, padding: "3px 9px" }}>
+            ★ {avg} ({reviews.length})
+          </span>
+        )}
+      </div>
+
+      {/* Existing reviews */}
+      {reviews.length > 0 ? (
+        <div style={{ marginBottom: 20, display: "flex", flexDirection: "column", gap: 12 }}>
+          {reviews.slice(0, 5).map((r, i) => (
+            <div key={i} style={{ background: "#f8f8f8", borderRadius: 14, padding: "12px 14px" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+                <span style={{ fontWeight: 700, fontSize: 13, color: "#1c1c1c" }}>{r.userName || "Anonymous"}</span>
+                <span style={{ background: "#48c479", color: "#fff", fontSize: 11,
+                  fontWeight: 700, borderRadius: 4, padding: "2px 6px" }}>★ {r.rating}</span>
+              </div>
+              {r.comment && <p style={{ fontSize: 13, color: "#686b78", margin: 0, lineHeight: 1.5 }}>{r.comment}</p>}
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p style={{ fontSize: 13, color: "#aaa", marginBottom: 20 }}>No reviews yet. Be the first!</p>
+      )}
+
+      {/* Write review form */}
+      {submitted ? (
+        <div style={{ background: "#f0fdf4", borderRadius: 14, padding: "14px", textAlign: "center",
+          color: "#16a34a", fontWeight: 600, fontSize: 13 }}>
+          ✓ Thanks! Your review is pending approval.
+        </div>
+      ) : (
+        <form onSubmit={handleSubmit}
+          style={{ background: "#f8f8f8", borderRadius: 16, padding: "16px", display: "flex",
+            flexDirection: "column", gap: 12 }}>
+          <h3 style={{ fontSize: 14, fontWeight: 700, color: "#1c1c1c", margin: 0 }}>Write a Review</h3>
+          <input
+            value={form.userName}
+            onChange={e => setForm(f => ({ ...f, userName: e.target.value }))}
+            placeholder="Your name"
+            style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10,
+              padding: "10px 14px", fontSize: 13, outline: "none", color: "#1c1c1c" }}
+          />
+          <StarSelector value={form.rating} onChange={v => setForm(f => ({ ...f, rating: v }))} />
+          <textarea
+            value={form.comment}
+            onChange={e => setForm(f => ({ ...f, comment: e.target.value }))}
+            placeholder="Share your experience…"
+            rows={3}
+            style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10,
+              padding: "10px 14px", fontSize: 13, outline: "none", resize: "none", color: "#1c1c1c" }}
+          />
+          <button type="submit" disabled={submitting}
+            style={{ background: "#e23744", color: "#fff", fontWeight: 700, fontSize: 14,
+              border: "none", borderRadius: 12, padding: "12px", cursor: "pointer", opacity: submitting ? 0.7 : 1 }}>
+            {submitting ? "Submitting…" : "Submit Review"}
+          </button>
+        </form>
+      )}
+    </div>
+  )
+}
+
+// ── Inquiry modal ─────────────────────────────────────────────────────────────
+function InquiryModal({ slug, restaurantName, onClose }) {
+  const [form, setForm]           = useState({ name: "", mobile: "", message: "" })
+  const [submitting, setSubmitting] = useState(false)
+  const [done, setDone]           = useState(false)
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    setSubmitting(true)
+    try {
+      await axios.post("/api/inquiries", { restaurantId: slug, restaurantName, ...form })
+      setDone(true)
+      toast.success("Your inquiry has been sent!")
+      setTimeout(onClose, 1800)
+    } catch {
+      toast.error("Could not send inquiry. Try again.")
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 2000, display: "flex",
+      alignItems: "flex-end", background: "rgba(0,0,0,0.45)" }}
+      onClick={onClose}>
+      <motion.div
+        initial={{ y: 80, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        exit={{ y: 80, opacity: 0 }}
+        transition={{ type: "spring", stiffness: 400, damping: 35 }}
+        style={{ background: "#fff", borderRadius: "20px 20px 0 0", padding: "20px 16px 36px",
+          width: "100%", maxWidth: 512, marginInline: "auto" }}
+        onClick={e => e.stopPropagation()}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+          <h3 style={{ fontSize: 16, fontWeight: 800, color: "#1c1c1c", margin: 0 }}>
+            📩 Send Inquiry to {restaurantName}
+          </h3>
+          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }}>
+            <LuX size={18} />
+          </button>
+        </div>
+        {done ? (
+          <div style={{ textAlign: "center", padding: "24px 0", color: "#16a34a", fontWeight: 700, fontSize: 14 }}>
+            ✓ Inquiry sent successfully!
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            {[
+              { key: "name", placeholder: "Your name", type: "text" },
+              { key: "mobile", placeholder: "Your mobile number", type: "tel" },
+            ].map(({ key, placeholder, type }) => (
+              <input key={key} type={type} placeholder={placeholder} required
+                value={form[key]}
+                onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))}
+                style={{ background: "#f8f8f8", border: "1px solid #e5e7eb", borderRadius: 12,
+                  padding: "12px 14px", fontSize: 13, outline: "none", color: "#1c1c1c" }} />
+            ))}
+            <textarea placeholder="Your message or question…" required rows={3}
+              value={form.message}
+              onChange={e => setForm(f => ({ ...f, message: e.target.value }))}
+              style={{ background: "#f8f8f8", border: "1px solid #e5e7eb", borderRadius: 12,
+                padding: "12px 14px", fontSize: 13, outline: "none", resize: "none", color: "#1c1c1c" }} />
+            <button type="submit" disabled={submitting}
+              style={{ background: "#e23744", color: "#fff", fontWeight: 700, fontSize: 14,
+                border: "none", borderRadius: 12, padding: "13px", cursor: "pointer",
+                display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+                opacity: submitting ? 0.7 : 1 }}>
+              <LuSend size={15} /> {submitting ? "Sending…" : "Send Inquiry"}
+            </button>
+          </form>
+        )}
+      </motion.div>
+    </div>
+  )
+}
+
 export default function RestaurantPage() {
   const router = useRouter()
   const slug = "dhaba-junction"
@@ -225,9 +416,13 @@ export default function RestaurantPage() {
   const [loading, setLoading] = useState(true)
   const [activeCategory, setActiveCategory] = useState("")
   const [search, setSearch] = useState("")
+  const [fav, setFav] = useState(false)
+  const [showInquiry, setShowInquiry] = useState(false)
   const categoryRefs = useRef({})
   const cartTotal = useAppSelector(selectCartTotal)
   const cartCount = useAppSelector(selectCartCount)
+
+  useEffect(() => { setFav(isFavourite(slug)) }, [])
 
   useEffect(() => {
     Promise.all([
@@ -295,6 +490,20 @@ export default function RestaurantPage() {
             display: "flex", alignItems: "center", justifyContent: "center",
             boxShadow: "0 2px 8px rgba(0,0,0,0.15)", zIndex: 10 }}>
           <LuArrowLeft size={18} />
+        </button>
+        {/* Heart / Favourite button */}
+        <button
+          onClick={() => {
+            const next = toggleFavourite({ slug, name: restaurantName || "Dhaba Junction", image: listing?.covers?.[0] || PHOTOS[0] })
+            setFav(next.some(f => f.slug === slug))
+            toast.success(fav ? "Removed from Saved" : "Saved to favourites ❤️")
+          }}
+          style={{ position: "absolute", top: 16, right: 16, background: "rgba(255,255,255,0.95)",
+            border: "none", borderRadius: "50%", width: 36, height: 36, cursor: "pointer",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            boxShadow: "0 2px 8px rgba(0,0,0,0.15)", zIndex: 10 }}>
+          <LuHeart size={18} fill={fav ? "#e23744" : "none"}
+            style={{ color: fav ? "#e23744" : "#1c1c1c" }} />
         </button>
         <span style={{ position: "absolute", bottom: 12, right: 12,
           background: "rgba(0,0,0,0.6)", color: "#fff", borderRadius: 20,
@@ -370,6 +579,30 @@ export default function RestaurantPage() {
           </div>
         ))}
       </div>
+
+      {/* Inquiry button */}
+      <div style={{ padding: "0 16px 8px" }}>
+        <button onClick={() => setShowInquiry(true)}
+          style={{ width: "100%", background: "#fff", border: "1.5px solid #e23744", borderRadius: 14,
+            padding: "13px", color: "#e23744", fontWeight: 700, fontSize: 14, cursor: "pointer",
+            display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+          <LuSend size={16} /> Send Inquiry
+        </button>
+      </div>
+
+      {/* Reviews */}
+      <ReviewsSection slug={slug} />
+
+      {/* Inquiry modal */}
+      <AnimatePresence>
+        {showInquiry && (
+          <InquiryModal
+            slug={slug}
+            restaurantName={restaurantName}
+            onClose={() => setShowInquiry(false)}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Floating cart bar */}
       <AnimatePresence>

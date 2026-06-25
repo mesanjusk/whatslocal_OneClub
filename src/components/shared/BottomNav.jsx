@@ -3,15 +3,16 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
-import { LuShoppingCart, LuHistory, LuThumbsUp, LuHouse } from "react-icons/lu"
+import { LuShoppingCart, LuHistory, LuThumbsUp, LuHouse, LuHeart } from "react-icons/lu"
 import { useAppSelector } from "@/lib/store/hooks"
 import { selectCartCount } from "@/lib/store/slices/cartSlice"
 
 const NAV_ITEMS = [
-  { label: "Recommended", href: "/recommended", icon: LuThumbsUp },
-  { label: "Explore",     href: "/home",        icon: LuHouse },
-  { label: "Cart",        href: "/cart",        icon: LuShoppingCart, showBadge: true },
-  { label: "History",     href: "/history",     icon: LuHistory },
+  { label: "Picks",     href: "/recommended", icon: LuThumbsUp },
+  { label: "Explore",   href: "/home",        icon: LuHouse },
+  { label: "Cart",      href: "/cart",        icon: LuShoppingCart, showBadge: true },
+  { label: "Saved",     href: "/favourites",  icon: LuHeart },
+  { label: "History",   href: "/history",     icon: LuHistory },
 ]
 
 export default function BottomNav() {
@@ -29,7 +30,7 @@ export default function BottomNav() {
         height: 70,
       }}
     >
-      <div className="grid grid-cols-4 h-full">
+      <div className="grid grid-cols-5 h-full">
         {NAV_ITEMS.map(({ label, href, icon: Icon, showBadge }) => {
           const active = pathname === href
           const count  = showBadge ? cartCount : 0
@@ -40,12 +41,11 @@ export default function BottomNav() {
               href={href}
               className="relative flex flex-col items-center justify-center gap-1 select-none"
             >
-              {/* Active top bar */}
               <AnimatePresence>
                 {active && (
                   <motion.div
                     layoutId="active-bar"
-                    className="absolute top-0 left-1/2 -translate-x-1/2 h-[3px] w-8 rounded-b-full"
+                    className="absolute top-0 left-1/2 -translate-x-1/2 h-[3px] w-6 rounded-b-full"
                     style={{ background: "#e23744" }}
                     initial={{ opacity: 0, scaleX: 0 }}
                     animate={{ opacity: 1, scaleX: 1 }}
@@ -55,20 +55,18 @@ export default function BottomNav() {
                 )}
               </AnimatePresence>
 
-              {/* Icon + badge wrapper */}
               <div className="relative">
                 <motion.div
                   animate={{ scale: active ? 1.18 : 1, y: active ? -1 : 0 }}
                   transition={{ type: "spring", stiffness: 500, damping: 30 }}
                 >
                   <Icon
-                    size={22}
+                    size={20}
                     strokeWidth={active ? 2.4 : 1.7}
                     style={{ color: active ? "#e23744" : "#9ca3af", transition: "color 0.2s ease" }}
                   />
                 </motion.div>
 
-                {/* Cart badge */}
                 <AnimatePresence>
                   {showBadge && count > 0 && (
                     <motion.span
@@ -86,11 +84,10 @@ export default function BottomNav() {
                 </AnimatePresence>
               </div>
 
-              {/* Label */}
               <motion.span
                 animate={{ color: active ? "#e23744" : "#9ca3af" }}
                 transition={{ duration: 0.2 }}
-                style={{ fontSize: 10, fontWeight: active ? 700 : 500, letterSpacing: "0.03em", lineHeight: 1 }}
+                style={{ fontSize: 9, fontWeight: active ? 700 : 500, letterSpacing: "0.02em", lineHeight: 1 }}
               >
                 {label}
               </motion.span>
