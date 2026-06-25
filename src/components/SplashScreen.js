@@ -8,9 +8,12 @@ export default function SplashScreen() {
   const [visible, setVisible] = useState(false)
 
   useEffect(() => {
-    // Show only on fresh page load (not on client-side navigation)
-    if (!sessionStorage.getItem("splashShown")) {
-      sessionStorage.setItem("splashShown", "1")
+    // Show on first visit AND every reload — use Navigation Timing API
+    // type "navigate" = fresh external visit, "reload" = F5/Ctrl+R
+    // type "back_forward" = browser history nav → no splash
+    // client-side Next.js nav = no full page load → useEffect already ran → no splash
+    const navType = performance?.getEntriesByType?.("navigation")?.[0]?.type
+    if (navType === "navigate" || navType === "reload" || !navType) {
       setVisible(true)
       const t = setTimeout(() => setVisible(false), 2500)
       return () => clearTimeout(t)
@@ -23,8 +26,9 @@ export default function SplashScreen() {
         <motion.div
           key="splash"
           initial={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.5, ease: "easeInOut" }}
+          exit={{ opacity: 0, pointerEvents: "none" }}
+          transition={{ duration: 0.45, ease: "easeInOut" }}
+          style={{ pointerEvents: visible ? "all" : "none" }}
           className="fixed inset-0 z-[9999] flex flex-col items-center justify-center overflow-hidden"
         >
           <motion.div
@@ -33,7 +37,6 @@ export default function SplashScreen() {
             animate={{ scale: 1 }}
             transition={{ duration: 2.5, ease: "easeOut" }}
           />
-
           <div className="relative z-10 flex flex-col items-center gap-6">
             <motion.div
               initial={{ opacity: 0, scale: 0.8 }}
@@ -49,7 +52,6 @@ export default function SplashScreen() {
                 onError={(e) => { e.currentTarget.style.display = "none" }}
               />
             </motion.div>
-
             <motion.h1
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -58,7 +60,6 @@ export default function SplashScreen() {
             >
               Hello Gondia!!
             </motion.h1>
-
             <motion.p
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}

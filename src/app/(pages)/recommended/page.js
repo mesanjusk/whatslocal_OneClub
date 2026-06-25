@@ -5,18 +5,16 @@ import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
 import {
   LuArrowRight, LuSparkles, LuPlus, LuMinus, LuTrophy,
-  LuShoppingCart, LuCheck,
+  LuShoppingCart, LuCheck, LuX,
 } from "react-icons/lu"
 import { TiStarFullOutline } from "react-icons/ti"
 import { CATEGORIES, TASTE_ICONS, getResults, pickWinner } from "@/lib/aiData"
 import { useAppDispatch, useAppSelector } from "@/lib/store/hooks"
 import { addItem, removeItem, selectItemQty } from "@/lib/store/slices/cartSlice"
 import {
-  setRecommendedState,
-  selectRecommendedQuery,
-  selectRecommendedResults,
-  selectRecommendedWinner,
-  selectRecommendedActiveTab,
+  setRecommendedState, clearRecommended,
+  selectRecommendedQuery, selectRecommendedResults,
+  selectRecommendedWinner, selectRecommendedActiveTab,
 } from "@/lib/store/slices/recommendedSlice"
 import clsx from "clsx"
 
@@ -108,22 +106,22 @@ function CompBar({ label, pct, color }) {
 }
 
 function ComparisonBars({ item, allItems }) {
-  const maxPrice  = Math.max(...allItems.map(i => i.price))
-  const minPrice  = Math.min(...allItems.map(i => i.price))
-  const range     = maxPrice - minPrice || 1
-  const valuePct  = Math.round(((maxPrice - item.price) / range) * 80 + 20)
-  const tastePct  = Math.round((item.tasteScore / 5) * 100)
+  const maxPrice = Math.max(...allItems.map(i => i.price))
+  const minPrice = Math.min(...allItems.map(i => i.price))
+  const range    = maxPrice - minPrice || 1
+  const valuePct = Math.round(((maxPrice - item.price) / range) * 80 + 20)
+  const tastePct = Math.round((item.tasteScore / 5) * 100)
   const ratingPct = Math.round((item.rating / 5) * 100)
   return (
     <div className="bg-gray-50/80 rounded-xl px-3.5 py-3 space-y-2.5">
-      <CompBar label="Value"  pct={valuePct}  color="#22c55e" />
-      <CompBar label="Taste"  pct={tastePct}  color="#f97316" />
-      <CompBar label="Rating" pct={ratingPct} color="#3b82f6" />
+      <CompBar label="Value"  pct={valuePct}   color="#22c55e" />
+      <CompBar label="Taste"  pct={tastePct}   color="#f97316" />
+      <CompBar label="Rating" pct={ratingPct}  color="#3b82f6" />
     </div>
   )
 }
 
-// ── Cart button: big full-width with inline qty stepper ───────────────────────
+// ── Cart control: full-width button OR inline stepper ─────────────────────────
 function CartControl({ item, restaurantSlug, restaurantName }) {
   const dispatch = useAppDispatch()
   const qty      = useAppSelector(selectItemQty(restaurantSlug, item.id || item.restaurant))
@@ -135,11 +133,8 @@ function CartControl({ item, restaurantSlug, restaurantName }) {
   const handleAdd = (e) => {
     e?.stopPropagation()
     dispatch(addItem({
-      id:             itemId,
-      name:           itemName,
-      price:          item.price,
-      category:       "Food",
-      dietType:       "veg",
+      id: itemId, name: itemName, price: item.price,
+      category: "Food", dietType: "veg",
       restaurantSlug: restaurantSlug || item.slug || "dhaba-junction",
       restaurantName: restaurantName || item.restaurant,
     }))
@@ -152,11 +147,13 @@ function CartControl({ item, restaurantSlug, restaurantName }) {
     dispatch(removeItem({ restaurantSlug, id: itemId }))
   }
 
-  // When item already in cart: show inline qty stepper
   if (qty > 0) {
     return (
-      <div className="flex items-center rounded-2xl overflow-hidden border-2 border-[#e23744]"
-        style={{ height: 52 }} onClick={e => e.stopPropagation()}>
+      <div
+        className="flex items-center rounded-2xl overflow-hidden border-2 border-[#e23744]"
+        style={{ height: 52 }}
+        onClick={e => e.stopPropagation()}
+      >
         <button onClick={handleRemove}
           className="flex items-center justify-center bg-[#e23744] text-white"
           style={{ width: 52, height: "100%" }}>
@@ -175,7 +172,6 @@ function CartControl({ item, restaurantSlug, restaurantName }) {
     )
   }
 
-  // Default: big Add to Cart button
   return (
     <motion.button
       whileTap={{ scale: 0.97 }}
@@ -196,8 +192,7 @@ function CartControl({ item, restaurantSlug, restaurantName }) {
             <LuCheck size={18} strokeWidth={2.5} /> Added to Cart!
           </motion.span>
         ) : (
-          <motion.span key="add"
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+          <motion.span key="add" initial={{ opacity: 0 }} animate={{ opacity: 1 }}
             className="flex items-center gap-2">
             <LuShoppingCart size={17} /> Add to Cart
           </motion.span>
@@ -207,7 +202,7 @@ function CartControl({ item, restaurantSlug, restaurantName }) {
   )
 }
 
-// ── Expandable insights ───────────────────────────────────────────────────────
+// ── Expandable AI insights ────────────────────────────────────────────────────
 function InsightsAccordion({ insights, cons }) {
   const [open, setOpen] = useState(false)
   return (
@@ -224,7 +219,6 @@ function InsightsAccordion({ insights, cons }) {
           <LuPlus size={14} className="text-gray-400" />
         </motion.div>
       </button>
-
       <AnimatePresence initial={false}>
         {open && (
           <motion.div key="acc"
@@ -259,9 +253,8 @@ function InsightsAccordion({ insights, cons }) {
 
 // ── AI Verdict card ───────────────────────────────────────────────────────────
 function AIVerdict({ winner, query, allItems }) {
-  const router = useRouter()
-  const slug   = winner.slug || "dhaba-junction"
-
+  const router  = useRouter()
+  const slug    = winner.slug || "dhaba-junction"
   const reasons = [
     winner.tags.includes("Most Ordered") && "Most ordered by locals",
     winner.tasteScore >= 4.3             && "Exceptional taste score",
@@ -281,7 +274,6 @@ function AIVerdict({ winner, query, allItems }) {
       transition={{ duration: 0.45, ease: "easeOut" }}
       className="rounded-2xl border border-[#e23744]/20 overflow-hidden shadow-xl shadow-[#e23744]/10"
     >
-      {/* Header — click to navigate */}
       <div
         className="bg-gradient-to-r from-[#e23744] to-[#ff6b6b] px-4 py-3 flex items-center gap-2 cursor-pointer"
         onClick={() => router.push(`/restaurant/${slug}`)}
@@ -300,27 +292,20 @@ function AIVerdict({ winner, query, allItems }) {
       </div>
 
       <div className="bg-gradient-to-b from-[#fff5f5] to-white px-4 py-4 space-y-3">
-        {/* Food image */}
         <div className="rounded-xl overflow-hidden cursor-pointer" style={{ height: 160 }}
           onClick={() => router.push(`/restaurant/${slug}`)}>
           <img src={winner.image} alt={winner.restaurant}
             className="w-full h-full object-cover hover:scale-105 transition-transform duration-500" />
         </div>
-
-        {/* 1. Taste tags line */}
         <div className="flex flex-wrap gap-1.5">
           {winner.tasteTags.map(t => <TasteTag key={t} label={t} />)}
         </div>
-
-        {/* 2. AI typing summary */}
         <div className="bg-white rounded-xl px-3.5 py-2.5 border border-[#e23744]/10 min-h-[44px]">
           <p className="text-sm text-gray-700 leading-relaxed">
             {summary}
             {typing && <span className="inline-block w-0.5 h-3.5 bg-[#e23744] ml-0.5 animate-pulse align-middle" />}
           </p>
         </div>
-
-        {/* 3. Reasons + stars */}
         <ul className="space-y-1.5">
           {reasons.map((r, i) => (
             <motion.li key={r}
@@ -333,18 +318,8 @@ function AIVerdict({ winner, query, allItems }) {
           ))}
         </ul>
         <Stars rating={winner.rating} />
-
-        {/* Comparison bars */}
         {allItems?.length > 1 && <ComparisonBars item={winner} allItems={allItems} />}
-
-        {/* 4. BIG Add to Cart — just above AI Taste Insights */}
-        <CartControl
-          item={winner}
-          restaurantSlug={slug}
-          restaurantName={winner.restaurant}
-        />
-
-        {/* View full menu */}
+        <CartControl item={winner} restaurantSlug={slug} restaurantName={winner.restaurant} />
         <button onClick={() => router.push(`/restaurant/${slug}`)}
           className="w-full flex items-center justify-center gap-1.5 text-xs font-semibold text-[#e23744] py-1 hover:underline">
           View Full Menu <LuArrowRight size={12} />
@@ -354,7 +329,7 @@ function AIVerdict({ winner, query, allItems }) {
   )
 }
 
-// ── Restaurant comparison card ────────────────────────────────────────────────
+// ── Restaurant card ───────────────────────────────────────────────────────────
 function RestaurantCard({ item, isWinner, index, allItems }) {
   const router = useRouter()
   const slug   = item.slug || "dhaba-junction"
@@ -363,13 +338,12 @@ function RestaurantCard({ item, isWinner, index, allItems }) {
     <motion.div
       initial={{ opacity: 0, y: 18 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.1 + 0.15, duration: 0.38, ease: "easeOut" }}
+      transition={{ delay: index * 0.08 + 0.1, duration: 0.35, ease: "easeOut" }}
       className={clsx(
         "rounded-2xl border overflow-hidden bg-white",
         isWinner ? "border-[#e23744]/25 shadow-md shadow-[#e23744]/8" : "border-gray-200 shadow-sm"
       )}
     >
-      {/* Image — click to navigate */}
       <div className="relative overflow-hidden cursor-pointer" style={{ height: 160 }}
         onClick={() => router.push(`/restaurant/${slug}`)}>
         <img src={item.image} alt={item.restaurant}
@@ -386,7 +360,6 @@ function RestaurantCard({ item, isWinner, index, allItems }) {
       </div>
 
       <div className="px-4 pt-3 pb-3 space-y-2.5">
-        {/* Restaurant name — click to navigate */}
         <div className="flex items-start justify-between gap-2">
           <button onClick={() => router.push(`/restaurant/${slug}`)}
             className="font-bold text-[15px] text-gray-900 leading-tight text-left hover:text-[#e23744] transition-colors">
@@ -396,8 +369,6 @@ function RestaurantCard({ item, isWinner, index, allItems }) {
             {item.tags.slice(0, 2).map(t => <Badge key={t} label={t} />)}
           </div>
         </div>
-
-        {/* Stars + pros */}
         <div className="flex items-center justify-between">
           <Stars rating={item.rating} />
           {item.pros.length > 0 && (
@@ -406,24 +377,13 @@ function RestaurantCard({ item, isWinner, index, allItems }) {
             </span>
           )}
         </div>
-
-        {/* 1. Taste tags */}
         <div className="flex flex-wrap gap-1">
           {item.tasteTags.map(t => <TasteTag key={t} label={t} />)}
         </div>
-
-        {/* 2. Comparison bars */}
         {allItems?.length > 1 && <ComparisonBars item={item} allItems={allItems} />}
-
-        {/* 3. BIG Add to Cart — sits just above AI Taste Insights */}
-        <CartControl
-          item={item}
-          restaurantSlug={slug}
-          restaurantName={item.restaurant}
-        />
+        <CartControl item={item} restaurantSlug={slug} restaurantName={item.restaurant} />
       </div>
 
-      {/* AI Taste Insights accordion — directly below Add to Cart */}
       <InsightsAccordion insights={item.insights} cons={item.cons} />
     </motion.div>
   )
@@ -464,6 +424,18 @@ function VerdictSkeleton() {
   )
 }
 
+// ── Find category match for a search string ───────────────────────────────────
+function matchCategory(query) {
+  const q = query.toLowerCase().trim()
+  if (!q) return null
+  return CATEGORIES.find(c =>
+    c.key === q ||
+    c.label.toLowerCase() === q ||
+    c.key.includes(q) ||
+    q.includes(c.key)
+  ) ?? null
+}
+
 // ── Main page ─────────────────────────────────────────────────────────────────
 export default function RecommendedPage() {
   const dispatch = useAppDispatch()
@@ -475,56 +447,112 @@ export default function RecommendedPage() {
 
   const [input,    setInput]    = useState("")
   const [thinking, setThinking] = useState(false)
+  // Progressive: render first card immediately, rest after short delay
+  const [visibleCount, setVisibleCount] = useState(1)
   const inputRef = useRef(null)
 
+  // Hydrate input from stored query on mount only
   useEffect(() => { if (storedQuery) setInput(storedQuery) }, [])
+
+  // When results arrive, show first card instantly then stagger the rest
+  useEffect(() => {
+    if (!storedResults?.results?.length) { setVisibleCount(1); return }
+    setVisibleCount(1)
+    const count = storedResults.results.length
+    for (let i = 2; i <= count; i++) {
+      setTimeout(() => setVisibleCount(i), i * 120)
+    }
+  }, [storedResults])
 
   const triggerSearch = (query) => {
     if (!query.trim()) return
     setThinking(true)
+    setVisibleCount(1)
     dispatch(setRecommendedState({ query, results: null, winner: null }))
+    // Simulated AI delay — data is local so this is purely UX
     setTimeout(() => {
       const res    = getResults(query)
       const picked = res?.results?.length ? pickWinner(res.results) : null
-      dispatch(setRecommendedState({ query, results: res, winner: picked }))
+      dispatch(setRecommendedState({ results: res, winner: picked }))
       setThinking(false)
-    }, 1500)
+    }, 900)
   }
 
+  // Tab click: active tab toggles OFF (resets) or activates a new tab
   const handleTabClick = (tab) => {
-    dispatch(setRecommendedState({ activeTab: tab.key }))
-    setInput(tab.label)
-    triggerSearch(tab.key)
+    if (storedActiveTab === tab.key) {
+      dispatch(clearRecommended())
+      setInput("")
+      setThinking(false)
+    } else {
+      dispatch(setRecommendedState({ activeTab: tab.key }))
+      setInput(tab.label)
+      triggerSearch(tab.key)
+    }
   }
 
+  // Input change: auto-highlight matching category tab
+  const handleInputChange = (val) => {
+    setInput(val)
+    const matched = matchCategory(val)
+    dispatch(setRecommendedState({ activeTab: matched?.key ?? null }))
+  }
+
+  // Search submit
   const handleSubmit = (e) => {
     e?.preventDefault()
-    if (input.trim()) {
-      dispatch(setRecommendedState({ activeTab: null }))
-      triggerSearch(input.trim())
-    }
+    if (!input.trim()) return
+    const matched = matchCategory(input)
+    dispatch(setRecommendedState({ activeTab: matched?.key ?? null }))
+    triggerSearch(input.trim())
+  }
+
+  // Clear everything — return to default state
+  const handleClear = () => {
+    dispatch(clearRecommended())
+    setInput("")
+    setThinking(false)
+    inputRef.current?.focus()
   }
 
   const results      = storedResults
   const winner       = storedWinner
   const activeTab    = storedActiveTab
   const currentQuery = storedQuery
+  const hasContent   = thinking || results
 
   return (
     <div className="min-h-screen bg-gray-50">
 
-      {/* Sticky header */}
+      {/* ── Sticky header ── */}
       <div className="sticky top-0 z-50 bg-white border-b border-gray-100 shadow-sm px-4 pt-5 pb-4 space-y-3.5">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#e23744] to-[#ff6b6b] flex items-center justify-center shadow-sm shadow-[#e23744]/30">
-            <LuSparkles size={14} color="white" />
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#e23744] to-[#ff6b6b] flex items-center justify-center shadow-sm shadow-[#e23744]/30">
+              <LuSparkles size={14} color="white" />
+            </div>
+            <div>
+              <h1 className="font-black text-[18px] text-gray-900 leading-none">AI Recommended</h1>
+              <p className="text-[10px] text-gray-400 mt-0.5">Smart picks, just for you</p>
+            </div>
           </div>
-          <div>
-            <h1 className="font-black text-[18px] text-gray-900 leading-none">AI Recommended</h1>
-            <p className="text-[10px] text-gray-400 mt-0.5">Smart picks, just for you</p>
-          </div>
+          {/* Reset button — only shows when there's active content */}
+          <AnimatePresence>
+            {hasContent && (
+              <motion.button
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.8 }}
+                onClick={handleClear}
+                className="flex items-center gap-1 text-xs font-semibold text-gray-500 bg-gray-100 hover:bg-gray-200 px-2.5 py-1.5 rounded-full transition-colors"
+              >
+                <LuX size={11} /> Reset
+              </motion.button>
+            )}
+          </AnimatePresence>
         </div>
 
+        {/* Search bar */}
         <form onSubmit={handleSubmit}
           className="flex items-center gap-2 bg-gray-100 rounded-xl px-3.5 py-2.5">
           <LuSparkles size={15} className="text-[#e23744] shrink-0" />
@@ -532,16 +560,22 @@ export default function RecommendedPage() {
             ref={inputRef}
             type="text"
             value={input}
-            onChange={e => setInput(e.target.value)}
+            onChange={e => handleInputChange(e.target.value)}
             placeholder="What are you feeling today?"
             className="flex-1 bg-transparent text-sm text-gray-800 outline-none placeholder:text-gray-400"
           />
+          {input && (
+            <button type="button" onClick={handleClear} className="shrink-0 p-0.5">
+              <LuX size={14} className="text-gray-400" />
+            </button>
+          )}
           <motion.button type="submit" whileTap={{ scale: 0.87 }} disabled={!input.trim()}
             className="w-8 h-8 rounded-lg bg-[#e23744] flex items-center justify-center shrink-0 disabled:opacity-30 shadow-sm shadow-[#e23744]/30">
             <LuArrowRight size={15} color="white" strokeWidth={2.5} />
           </motion.button>
         </form>
 
+        {/* Category tabs — click active tab to DESELECT */}
         <div className="flex gap-2 overflow-x-auto no-scrollbar">
           {CATEGORIES.map(tab => (
             <motion.button key={tab.key} whileTap={{ scale: 0.92 }}
@@ -553,16 +587,20 @@ export default function RecommendedPage() {
                   : "bg-white text-gray-600 border-gray-200"
               )}>
               <span>{tab.icon}</span>{tab.label}
+              {/* Show × on active tab to signal it can be deselected */}
+              {activeTab === tab.key && (
+                <LuX size={10} className="ml-0.5 opacity-80" />
+              )}
             </motion.button>
           ))}
         </div>
       </div>
 
-      {/* Content */}
+      {/* ── Content ── */}
       <div className="px-4 pt-5 pb-28 space-y-4">
 
-        {/* Empty state */}
-        {!thinking && !results && (
+        {/* Default state: no query active */}
+        {!hasContent && (
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
             className="text-center py-14 space-y-4">
             <motion.div className="text-5xl select-none"
@@ -579,7 +617,7 @@ export default function RecommendedPage() {
             <div className="flex flex-wrap gap-2 justify-center pt-1">
               {["idli", "paneer", "biryani", "dosa", "burger", "noodles", "pizza"].map(s => (
                 <button key={s}
-                  onClick={() => { setInput(s); triggerSearch(s) }}
+                  onClick={() => { handleInputChange(s); triggerSearch(s) }}
                   className="text-xs px-3.5 py-1.5 rounded-full bg-white border border-gray-200 text-gray-600 hover:border-[#e23744] hover:text-[#e23744] font-medium transition-colors">
                   {s}
                 </button>
@@ -588,7 +626,7 @@ export default function RecommendedPage() {
           </motion.div>
         )}
 
-        {/* Thinking */}
+        {/* Thinking skeletons */}
         <AnimatePresence>
           {thinking && (
             <motion.div key="thinking"
@@ -616,9 +654,14 @@ export default function RecommendedPage() {
                   <p className="text-4xl">🤔</p>
                   <p className="font-bold text-gray-700">No results for "{currentQuery}"</p>
                   <p className="text-sm text-gray-400">Try: idli · paneer · biryani · dosa · pizza</p>
+                  <button onClick={handleClear}
+                    className="mt-2 text-sm font-semibold text-[#e23744] underline underline-offset-2">
+                    Clear and try again
+                  </button>
                 </motion.div>
               ) : (
                 <>
+                  {/* AI Verdict — always rendered first (no progressive delay) */}
                   {winner && <AIVerdict winner={winner} query={currentQuery} allItems={results.results} />}
 
                   <div className="flex items-center gap-3 pt-1">
@@ -629,7 +672,8 @@ export default function RecommendedPage() {
                     <div className="flex-1 h-px bg-gray-200" />
                   </div>
 
-                  {results.results.map((item, i) => (
+                  {/* Progressive rendering: first card instant, rest staggered */}
+                  {results.results.slice(0, visibleCount).map((item, i) => (
                     <RestaurantCard
                       key={item.restaurant + i}
                       item={item}
@@ -638,6 +682,15 @@ export default function RecommendedPage() {
                       allItems={results.results}
                     />
                   ))}
+
+                  {/* Skeleton placeholder while remaining cards load in */}
+                  {visibleCount < results.results.length && (
+                    <div className="space-y-4">
+                      {Array.from({ length: results.results.length - visibleCount }).map((_, i) => (
+                        <Skeleton key={i} />
+                      ))}
+                    </div>
+                  )}
                 </>
               )}
             </motion.div>

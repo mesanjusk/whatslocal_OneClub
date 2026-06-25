@@ -2,12 +2,13 @@ import { createSlice } from "@reduxjs/toolkit"
 import { getWindow } from "@/lib/utils/getWindow"
 
 const STORAGE_KEY = "recommended_state_v1"
+const EMPTY = { query: "", results: null, winner: null, activeTab: null }
 
 const load = () => {
   try {
     const raw = getWindow()?.sessionStorage?.getItem(STORAGE_KEY)
-    return raw ? JSON.parse(raw) : { query: "", results: null, winner: null, activeTab: null }
-  } catch { return { query: "", results: null, winner: null, activeTab: null } }
+    return raw ? JSON.parse(raw) : { ...EMPTY }
+  } catch { return { ...EMPTY } }
 }
 
 const save = (state) => {
@@ -20,11 +21,12 @@ const recommendedSlice = createSlice({
   name: "recommended",
   initialState: load(),
   reducers: {
+    // Use `in payload` checks so explicit null values are honoured
     setRecommendedState(state, { payload }) {
-      state.query     = payload.query     ?? state.query
-      state.results   = payload.results   ?? state.results
-      state.winner    = payload.winner    ?? state.winner
-      state.activeTab = payload.activeTab ?? state.activeTab
+      if ("query"     in payload) state.query     = payload.query
+      if ("results"   in payload) state.results   = payload.results
+      if ("winner"    in payload) state.winner    = payload.winner
+      if ("activeTab" in payload) state.activeTab = payload.activeTab
       save(state)
     },
     clearRecommended(state) {
