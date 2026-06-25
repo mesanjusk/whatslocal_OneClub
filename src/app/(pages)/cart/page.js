@@ -67,16 +67,16 @@ function RestaurantGroup({ group, listing }) {
           <div key={item.id} className="flex items-center gap-3 py-3">
             <div className="flex-1 min-w-0">
               <p className="font-semibold text-sm text-gray-900 truncate">{item.name}</p>
-              <p className="text-xs text-gray-400 mt-0.5">₹{item.price} each</p>
+              <p className="text-xs font-bold text-[#e23744] mt-0.5">₹{item.price} each</p>
             </div>
             <div className="flex items-center gap-2 shrink-0">
               <button
                 onClick={() => dispatch(removeItem({ restaurantSlug: slug, id: item.id }))}
-                className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center"
+                className="w-7 h-7 rounded-full bg-gray-800 flex items-center justify-center"
               >
-                <LuMinus size={12} strokeWidth={3} />
+                <LuMinus size={12} strokeWidth={3} className="text-white" />
               </button>
-              <span className="w-5 text-center font-bold text-sm">{item.qty}</span>
+              <span className="w-5 text-center font-black text-sm text-gray-900">{item.qty}</span>
               <button
                 onClick={() => dispatch(addItem({
                   restaurantSlug: slug, restaurantName: name,
@@ -88,7 +88,7 @@ function RestaurantGroup({ group, listing }) {
                 <LuPlus size={12} strokeWidth={3} className="text-white" />
               </button>
             </div>
-            <span className="text-sm font-semibold shrink-0 w-16 text-right">
+            <span className="text-sm font-bold text-gray-900 shrink-0 w-16 text-right">
               ₹{item.price * item.qty}
             </span>
           </div>
