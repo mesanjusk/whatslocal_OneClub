@@ -142,11 +142,11 @@ function RestaurantRow({ item, rank, isWinner, allItems }) {
   return (
     <div className={clsx(
       "rounded-2xl overflow-hidden border bg-white transition-all",
-      isWinner ? "border-[#e23744]/30 shadow-md shadow-[#e23744]/8" : "border-gray-200"
+      isWinner ? "border-[#e23744]/30 shadow-md shadow-[#e23744]/8" : "border-gray-200 hover:border-gray-300 hover:shadow-sm"
     )}>
       {/* Row header — always visible */}
       <button
-        className="w-full flex items-center gap-3 px-4 py-3 text-left"
+        className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 transition-colors"
         onClick={() => setOpen(o => !o)}
       >
         {/* Rank */}
@@ -268,6 +268,7 @@ function VerdictBanner({ winner, query }) {
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.12, duration: 0.35 }}
+      whileHover={{ scale: 1.01 }}
       onClick={() => router.push(`/restaurant/${slug}`)}
       className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-left"
       style={{ background: "linear-gradient(135deg, #e23744, #ff6b6b)" }}
@@ -461,6 +462,7 @@ export default function RecommendedPage() {
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: i * 0.06, duration: 0.28 }}
+                  whileHover={{ scale: 1.03 }}
                   whileTap={{ scale: 0.96 }}
                   onClick={() => { handleInputChange(item.query); triggerSearch(item.query) }}
                   className="relative rounded-2xl overflow-hidden text-left"
