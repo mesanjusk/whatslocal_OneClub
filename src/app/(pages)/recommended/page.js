@@ -18,6 +18,18 @@ import {
 } from "@/lib/store/slices/recommendedSlice"
 import clsx from "clsx"
 
+// ── Food grid items for default state ────────────────────────────────────────
+const FOOD_GRID = [
+  { label: "Biryani",  query: "biryani",  sub: "Fragrant & hearty",  image: "https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=600&q=80" },
+  { label: "Paneer",   query: "paneer",   sub: "Rich & creamy",      image: "https://images.unsplash.com/photo-1631452180519-c014fe946bc7?w=600&q=80" },
+  { label: "Dosa",     query: "dosa",     sub: "Crispy & authentic", image: "https://images.unsplash.com/photo-1668236543090-82eba5ee5976?w=600&q=80" },
+  { label: "Burger",   query: "burger",   sub: "Crispy & bold",      image: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=600&q=80" },
+  { label: "Noodles",  query: "noodles",  sub: "Wok-tossed",         image: "https://images.unsplash.com/photo-1617093727343-374698b1b08d?w=600&q=80" },
+  { label: "Pizza",    query: "pizza",    sub: "Cheesy & crisp",     image: "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=600&q=80" },
+  { label: "Idli",     query: "idli",     sub: "Soft & tangy",       image: "https://images.unsplash.com/photo-1589301760014-d929f3979dbc?w=600&q=80" },
+  { label: "Desserts", query: "desserts", sub: "Sweet treats",       image: "https://images.unsplash.com/photo-1601303516534-3b50cba4b08a?w=600&q=80" },
+]
+
 // ── Stars ─────────────────────────────────────────────────────────────────────
 function Stars({ rating, size = 11 }) {
   return (
@@ -444,28 +456,29 @@ export default function RecommendedPage() {
       {/* ── Content ── */}
       <div className="px-4 pt-5 pb-28 space-y-3">
 
-        {/* Default state */}
+        {/* Default state: food grid */}
         {!hasContent && (
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-            className="text-center py-14 space-y-4">
-            <motion.div className="text-5xl select-none"
-              animate={{ rotate: [0, 8, -8, 0] }}
-              transition={{ duration: 2.5, repeat: Infinity, repeatDelay: 2 }}>
-              🤖
-            </motion.div>
-            <div>
-              <p className="font-bold text-gray-800 text-[15px]">Ask me what to order</p>
-              <p className="text-sm text-gray-400 mt-1.5 max-w-[260px] mx-auto leading-relaxed">
-                Type a dish or pick a category — I'll find the best spots and rank them for you.
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-2 justify-center pt-1">
-              {["idli", "paneer", "biryani", "dosa", "burger", "noodles", "pizza"].map(s => (
-                <button key={s}
-                  onClick={() => { handleInputChange(s); triggerSearch(s) }}
-                  className="text-xs px-3.5 py-1.5 rounded-full bg-white border border-gray-200 text-gray-600 hover:border-[#e23744] hover:text-[#e23744] font-medium transition-colors">
-                  {s}
-                </button>
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
+            <div className="grid grid-cols-2 gap-3">
+              {FOOD_GRID.map((item, i) => (
+                <motion.button
+                  key={item.query}
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: i * 0.06, duration: 0.28 }}
+                  whileTap={{ scale: 0.96 }}
+                  onClick={() => { handleInputChange(item.query); triggerSearch(item.query) }}
+                  className="relative rounded-2xl overflow-hidden text-left"
+                  style={{ height: 140 }}
+                >
+                  <img src={item.image} alt={item.label}
+                    className="w-full h-full object-cover" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/10 to-transparent" />
+                  <div className="absolute bottom-0 left-0 px-3 py-2.5">
+                    <p className="font-black text-white text-[15px] leading-tight capitalize">{item.label}</p>
+                    <p className="text-[10px] text-white/70 font-medium">{item.sub}</p>
+                  </div>
+                </motion.button>
               ))}
             </div>
           </motion.div>
