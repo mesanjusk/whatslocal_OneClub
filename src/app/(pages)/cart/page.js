@@ -72,7 +72,7 @@ function RestaurantGroup({ group, listing }) {
             <div className="flex items-center gap-2 shrink-0">
               <button
                 onClick={() => dispatch(removeItem({ restaurantSlug: slug, id: item.id }))}
-                className="w-7 h-7 rounded-full border border-gray-200 flex items-center justify-center"
+                className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center"
               >
                 <LuMinus size={12} strokeWidth={3} />
               </button>
@@ -83,9 +83,9 @@ function RestaurantGroup({ group, listing }) {
                   id: item.id, name: item.name, price: item.price,
                   category: item.category, dietType: item.dietType,
                 }))}
-                className="w-7 h-7 rounded-full border border-gray-200 flex items-center justify-center"
+                className="w-7 h-7 rounded-full bg-[#e23744] flex items-center justify-center"
               >
-                <LuPlus size={12} strokeWidth={3} />
+                <LuPlus size={12} strokeWidth={3} className="text-white" />
               </button>
             </div>
             <span className="text-sm font-semibold shrink-0 w-16 text-right">
@@ -121,7 +121,7 @@ function RestaurantGroup({ group, listing }) {
           </button>
           <button
             onClick={handleCall}
-            className="flex items-center justify-center gap-2 bg-white border border-gray-200 font-bold py-3 px-4 rounded-xl text-sm"
+            className="flex items-center justify-center gap-2 bg-gray-800 text-white font-bold py-3 px-4 rounded-xl text-sm"
           >
             <LuPhone size={16} />
             Call

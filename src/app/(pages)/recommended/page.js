@@ -105,12 +105,12 @@ function CartControl({ item, restaurantSlug, restaurantName }) {
   return (
     <motion.button whileTap={{ scale: 0.96 }} onClick={handleAdd}
       className={clsx(
-        "inline-flex items-center gap-1.5 rounded-xl font-bold text-[12px] px-3 transition-all",
+        "inline-flex items-center gap-1.5 rounded-lg font-semibold text-[11px] px-2.5 transition-all border",
         flashed
-          ? "bg-emerald-500 text-white"
-          : "bg-[#e23744] text-white shadow-sm shadow-[#e23744]/30"
+          ? "bg-emerald-50 text-emerald-600 border-emerald-200"
+          : "bg-white text-[#e23744] border-[#e23744]/40 hover:bg-[#fff5f5]"
       )}
-      style={{ height: 32 }}>
+      style={{ height: 28 }}>
       <AnimatePresence mode="wait">
         {flashed ? (
           <motion.span key="done" initial={{ scale: 0.7, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
