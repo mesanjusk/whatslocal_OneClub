@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
 import {
   LuArrowRight, LuSparkles, LuPlus, LuMinus, LuTrophy,
-  LuShoppingCart, LuCheck, LuX,
+  LuShoppingCart, LuCheck, LuX, LuChevronDown,
 } from "react-icons/lu"
 import { TiStarFullOutline } from "react-icons/ti"
 import { CATEGORIES, TASTE_ICONS, getResults, pickWinner } from "@/lib/aiData"
@@ -18,20 +18,17 @@ import {
 } from "@/lib/store/slices/recommendedSlice"
 import clsx from "clsx"
 
-// ── Typing hook ───────────────────────────────────────────────────────────────
-function useTypingText(text, speed = 22) {
-  const [displayed, setDisplayed] = useState("")
-  useEffect(() => {
-    setDisplayed("")
-    if (!text) return
-    let i = 0
-    const id = setInterval(() => {
-      setDisplayed(text.slice(0, ++i))
-      if (i >= text.length) clearInterval(id)
-    }, speed)
-    return () => clearInterval(id)
-  }, [text, speed])
-  return displayed
+// ── Stars ─────────────────────────────────────────────────────────────────────
+function Stars({ rating, size = 11 }) {
+  return (
+    <span className="inline-flex items-center gap-0.5">
+      {[1, 2, 3, 4, 5].map(n => (
+        <TiStarFullOutline key={n} size={size}
+          className={n <= Math.round(rating) ? "text-yellow-400" : "text-gray-200"} />
+      ))}
+      <span className="text-[11px] font-bold text-gray-500 ml-1">{rating.toFixed(1)}</span>
+    </span>
+  )
 }
 
 // ── Thinking dots ─────────────────────────────────────────────────────────────
@@ -48,85 +45,11 @@ function ThinkingDots() {
   )
 }
 
-// ── Stars ─────────────────────────────────────────────────────────────────────
-function Stars({ rating }) {
-  return (
-    <div className="flex items-center gap-0.5">
-      {[1, 2, 3, 4, 5].map(n => (
-        <TiStarFullOutline key={n} size={12}
-          className={n <= Math.round(rating) ? "text-yellow-400" : "text-gray-200"} />
-      ))}
-      <span className="text-[11px] font-bold text-gray-600 ml-1">{rating.toFixed(1)}</span>
-    </div>
-  )
-}
-
-// ── Taste tag pill ────────────────────────────────────────────────────────────
-function TasteTag({ label }) {
-  const icon = TASTE_ICONS[label] || "✨"
-  return (
-    <span className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full bg-orange-50 border border-orange-100 text-orange-700">
-      {icon} {label}
-    </span>
-  )
-}
-
-// ── Badge chip ────────────────────────────────────────────────────────────────
-function Badge({ label }) {
-  const map = {
-    "Most Ordered":  "bg-orange-50 text-orange-600 border-orange-200",
-    "Recommended":   "bg-red-50 text-[#e23744] border-red-200",
-    "Best Value":    "bg-emerald-50 text-emerald-700 border-emerald-200",
-    "Best Quantity": "bg-blue-50 text-blue-600 border-blue-200",
-  }
-  return (
-    <span className={clsx("text-[10px] font-bold px-2 py-0.5 rounded-full border",
-      map[label] || "bg-gray-100 text-gray-500 border-gray-200")}>
-      {label}
-    </span>
-  )
-}
-
-// ── Comparison bars ───────────────────────────────────────────────────────────
-function CompBar({ label, pct, color }) {
-  return (
-    <div className="space-y-[3px]">
-      <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">{label}</span>
-      <div className="h-[6px] rounded-full bg-gray-100 overflow-hidden">
-        <motion.div
-          initial={{ width: 0 }}
-          animate={{ width: `${pct}%` }}
-          transition={{ duration: 0.5, ease: "easeOut", delay: 0.1 }}
-          className="h-full rounded-full"
-          style={{ background: color }}
-        />
-      </div>
-    </div>
-  )
-}
-
-function ComparisonBars({ item, allItems }) {
-  const maxPrice = Math.max(...allItems.map(i => i.price))
-  const minPrice = Math.min(...allItems.map(i => i.price))
-  const range    = maxPrice - minPrice || 1
-  const valuePct = Math.round(((maxPrice - item.price) / range) * 80 + 20)
-  const tastePct = Math.round((item.tasteScore / 5) * 100)
-  const ratingPct = Math.round((item.rating / 5) * 100)
-  return (
-    <div className="bg-gray-50/80 rounded-xl px-3.5 py-3 space-y-2.5">
-      <CompBar label="Value"  pct={valuePct}   color="#22c55e" />
-      <CompBar label="Taste"  pct={tastePct}   color="#f97316" />
-      <CompBar label="Rating" pct={ratingPct}  color="#3b82f6" />
-    </div>
-  )
-}
-
-// ── Cart control: full-width button OR inline stepper ─────────────────────────
+// ── Cart control ──────────────────────────────────────────────────────────────
 function CartControl({ item, restaurantSlug, restaurantName }) {
   const dispatch = useAppDispatch()
   const qty      = useAppSelector(selectItemQty(restaurantSlug, item.id || item.restaurant))
   const [flashed, setFlashed] = useState(false)
-
   const itemId   = item.id || item.restaurant
   const itemName = item.dish || item.restaurant
 
@@ -141,7 +64,6 @@ function CartControl({ item, restaurantSlug, restaurantName }) {
     setFlashed(true)
     setTimeout(() => setFlashed(false), 1000)
   }
-
   const handleRemove = (e) => {
     e?.stopPropagation()
     dispatch(removeItem({ restaurantSlug, id: itemId }))
@@ -149,52 +71,45 @@ function CartControl({ item, restaurantSlug, restaurantName }) {
 
   if (qty > 0) {
     return (
-      <div
-        className="flex items-center rounded-2xl overflow-hidden border-2 border-[#e23744]"
-        style={{ height: 52 }}
-        onClick={e => e.stopPropagation()}
-      >
+      <div className="flex items-center rounded-xl overflow-hidden border-2 border-[#e23744]"
+        style={{ height: 40 }} onClick={e => e.stopPropagation()}>
         <button onClick={handleRemove}
           className="flex items-center justify-center bg-[#e23744] text-white"
-          style={{ width: 52, height: "100%" }}>
-          <LuMinus size={18} strokeWidth={2.5} />
+          style={{ width: 40, height: "100%" }}>
+          <LuMinus size={15} strokeWidth={2.5} />
         </button>
         <div className="flex-1 flex flex-col items-center justify-center bg-white">
-          <span className="font-black text-[18px] text-[#e23744] leading-none">{qty}</span>
-          <span className="text-[10px] text-gray-400 font-medium">in cart</span>
+          <span className="font-black text-[16px] text-[#e23744] leading-none">{qty}</span>
+          <span className="text-[9px] text-gray-400 font-medium">in cart</span>
         </div>
         <button onClick={handleAdd}
           className="flex items-center justify-center bg-[#e23744] text-white"
-          style={{ width: 52, height: "100%" }}>
-          <LuPlus size={18} strokeWidth={2.5} />
+          style={{ width: 40, height: "100%" }}>
+          <LuPlus size={15} strokeWidth={2.5} />
         </button>
       </div>
     )
   }
 
   return (
-    <motion.button
-      whileTap={{ scale: 0.97 }}
-      onClick={handleAdd}
+    <motion.button whileTap={{ scale: 0.96 }} onClick={handleAdd}
       className={clsx(
-        "w-full flex items-center justify-center gap-2 rounded-2xl font-bold text-[15px] transition-all",
+        "flex items-center justify-center gap-1.5 rounded-xl font-bold text-[13px] px-4 transition-all",
         flashed
-          ? "bg-emerald-500 text-white shadow-lg shadow-emerald-500/30"
-          : "bg-[#e23744] text-white shadow-md shadow-[#e23744]/30 hover:bg-[#cc2f3c]"
+          ? "bg-emerald-500 text-white"
+          : "bg-[#e23744] text-white shadow-sm shadow-[#e23744]/30"
       )}
-      style={{ height: 52 }}
-    >
+      style={{ height: 40, minWidth: 130 }}>
       <AnimatePresence mode="wait">
         {flashed ? (
-          <motion.span key="done"
-            initial={{ scale: 0.7, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
-            className="flex items-center gap-2">
-            <LuCheck size={18} strokeWidth={2.5} /> Added to Cart!
+          <motion.span key="done" initial={{ scale: 0.7, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+            className="flex items-center gap-1.5">
+            <LuCheck size={15} strokeWidth={2.5} /> Added!
           </motion.span>
         ) : (
           <motion.span key="add" initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-            className="flex items-center gap-2">
-            <LuShoppingCart size={17} /> Add to Cart
+            className="flex items-center gap-1.5">
+            <LuShoppingCart size={14} /> Add to Cart
           </motion.span>
         )}
       </AnimatePresence>
@@ -202,48 +117,105 @@ function CartControl({ item, restaurantSlug, restaurantName }) {
   )
 }
 
-// ── Expandable AI insights ────────────────────────────────────────────────────
-function InsightsAccordion({ insights, cons }) {
+// ── Expandable restaurant row ─────────────────────────────────────────────────
+function RestaurantRow({ item, rank, isWinner, allItems }) {
+  const router  = useRouter()
   const [open, setOpen] = useState(false)
+  const slug    = item.slug || "dhaba-junction"
+
+  const keywords = [
+    ...item.tasteTags.slice(0, 2),
+    item.tags[0],
+  ].filter(Boolean)
+
   return (
-    <div className="border-t border-gray-100">
+    <div className={clsx(
+      "rounded-2xl overflow-hidden border bg-white transition-all",
+      isWinner ? "border-[#e23744]/30 shadow-md shadow-[#e23744]/8" : "border-gray-200"
+    )}>
+      {/* Row header — always visible */}
       <button
-        onClick={e => { e.stopPropagation(); setOpen(o => !o) }}
-        className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors"
+        className="w-full flex items-center gap-3 px-4 py-3 text-left"
+        onClick={() => setOpen(o => !o)}
       >
-        <span className="flex items-center gap-1.5 text-xs font-semibold text-gray-600">
-          <LuSparkles size={12} className="text-[#e23744]" />
-          AI Taste Insights
-        </span>
-        <motion.div animate={{ rotate: open ? 45 : 0 }} transition={{ duration: 0.22 }}>
-          <LuPlus size={14} className="text-gray-400" />
-        </motion.div>
+        {/* Rank */}
+        <div className={clsx(
+          "w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-[11px] font-black",
+          isWinner ? "bg-[#e23744] text-white" : "bg-gray-100 text-gray-500"
+        )}>
+          {isWinner ? <LuTrophy size={12} /> : rank}
+        </div>
+
+        {/* Name + stars + keywords */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="font-bold text-[14px] text-gray-900 leading-tight truncate">
+              {item.restaurant}
+            </span>
+            {isWinner && (
+              <span className="text-[9px] font-black px-1.5 py-0.5 rounded-full bg-[#e23744] text-white shrink-0">
+                TOP PICK
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+            <Stars rating={item.rating} />
+            <span className="text-[11px] text-gray-400">·</span>
+            {keywords.map((k, i) => (
+              <span key={i} className="text-[10px] text-gray-500 font-medium">{k}</span>
+            ))}
+          </div>
+        </div>
+
+        {/* Price + chevron */}
+        <div className="flex items-center gap-2 shrink-0">
+          <div className="text-right">
+            <p className="font-black text-[15px] text-gray-900 leading-none">₹{item.price}</p>
+            <p className="text-[10px] text-gray-400">{item.quantity}</p>
+          </div>
+          <motion.div animate={{ rotate: open ? 180 : 0 }} transition={{ duration: 0.22 }}>
+            <LuChevronDown size={16} className="text-gray-400" />
+          </motion.div>
+        </div>
       </button>
+
+      {/* Expanded panel */}
       <AnimatePresence initial={false}>
         {open && (
-          <motion.div key="acc"
+          <motion.div key="panel"
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.28, ease: [0.4, 0, 0.2, 1] }}
+            transition={{ duration: 0.26, ease: [0.4, 0, 0.2, 1] }}
             className="overflow-hidden"
           >
-            <ul className="px-4 pb-4 pt-1 space-y-2 bg-gray-50/60">
-              {insights.map((ins, i) => (
-                <motion.li key={i}
-                  initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.06 }}
-                  className="flex items-start gap-2 text-xs text-gray-600 leading-relaxed">
-                  <span className="text-[#e23744] font-bold mt-0.5 shrink-0">›</span>
-                  {ins}
-                </motion.li>
-              ))}
-              {cons?.length > 0 && (
-                <li className="flex items-start gap-2 text-xs text-gray-400 pt-1.5 border-t border-gray-200">
-                  <span className="shrink-0 mt-0.5">⚠</span> {cons[0]}
-                </li>
-              )}
-            </ul>
+            <div className="border-t border-gray-100 px-4 py-3 space-y-3 bg-gray-50/50">
+              {/* Insights */}
+              <ul className="space-y-1.5">
+                {item.insights.slice(0, 3).map((ins, i) => (
+                  <li key={i} className="flex items-start gap-2 text-[12px] text-gray-600 leading-relaxed">
+                    <span className="text-[#e23744] font-black mt-0.5 shrink-0">›</span>
+                    {ins}
+                  </li>
+                ))}
+                {item.cons?.[0] && (
+                  <li className="flex items-start gap-2 text-[11px] text-gray-400 border-t border-gray-200 pt-1.5">
+                    <span className="shrink-0 mt-0.5">⚠</span> {item.cons[0]}
+                  </li>
+                )}
+              </ul>
+
+              {/* Actions */}
+              <div className="flex items-center gap-2 pt-0.5">
+                <CartControl item={item} restaurantSlug={slug} restaurantName={item.restaurant} />
+                <button
+                  onClick={() => router.push(`/restaurant/${slug}`)}
+                  className="flex items-center gap-1 text-xs font-semibold text-[#e23744] px-3 py-2 rounded-xl border border-[#e23744]/30 bg-white hover:bg-[#fff5f5] transition-colors"
+                >
+                  View Menu <LuArrowRight size={11} />
+                </button>
+              </div>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -251,180 +223,83 @@ function InsightsAccordion({ insights, cons }) {
   )
 }
 
-// ── AI Verdict card ───────────────────────────────────────────────────────────
-function AIVerdict({ winner, query, allItems }) {
-  const router  = useRouter()
-  const slug    = winner.slug || "dhaba-junction"
-  const reasons = [
-    winner.tags.includes("Most Ordered") && "Most ordered by locals",
-    winner.tasteScore >= 4.3             && "Exceptional taste score",
-    winner.rating >= 4.3                 && "Highly rated by customers",
-    winner.tags.includes("Best Value")   && "Best price-to-quality ratio",
-    winner.pros[0],
-  ].filter(Boolean).slice(0, 3)
-
-  const summaryFull = `Best balance of taste, price, and popularity for ${query}.`
-  const summary     = useTypingText(summaryFull, 25)
-  const typing      = summary.length < summaryFull.length
-
+// ── Dish hero image ───────────────────────────────────────────────────────────
+function DishHero({ query, imageUrl }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: -16 }}
+      initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.45, ease: "easeOut" }}
-      className="rounded-2xl border border-[#e23744]/20 overflow-hidden shadow-xl shadow-[#e23744]/10"
+      transition={{ duration: 0.4, ease: "easeOut" }}
+      className="rounded-2xl overflow-hidden relative"
+      style={{ height: 180 }}
     >
-      <div
-        className="bg-gradient-to-r from-[#e23744] to-[#ff6b6b] px-4 py-3 flex items-center gap-2 cursor-pointer"
-        onClick={() => router.push(`/restaurant/${slug}`)}
-      >
-        <div className="w-7 h-7 rounded-lg bg-white/20 flex items-center justify-center shrink-0">
-          <LuTrophy size={14} color="white" />
-        </div>
-        <div>
-          <p className="text-[10px] font-black text-white/70 uppercase tracking-widest">🏆 AI Verdict</p>
-          <p className="font-black text-[17px] text-white leading-tight">{winner.restaurant}</p>
-        </div>
-        <div className="ml-auto text-right">
-          <p className="text-2xl font-black text-white">₹{winner.price}</p>
-          <p className="text-[11px] text-white/70">{winner.quantity}</p>
-        </div>
-      </div>
-
-      <div className="bg-gradient-to-b from-[#fff5f5] to-white px-4 py-4 space-y-3">
-        <div className="rounded-xl overflow-hidden cursor-pointer" style={{ height: 160 }}
-          onClick={() => router.push(`/restaurant/${slug}`)}>
-          <img src={winner.image} alt={winner.restaurant}
-            className="w-full h-full object-cover hover:scale-105 transition-transform duration-500" />
-        </div>
-        <div className="flex flex-wrap gap-1.5">
-          {winner.tasteTags.map(t => <TasteTag key={t} label={t} />)}
-        </div>
-        <div className="bg-white rounded-xl px-3.5 py-2.5 border border-[#e23744]/10 min-h-[44px]">
-          <p className="text-sm text-gray-700 leading-relaxed">
-            {summary}
-            {typing && <span className="inline-block w-0.5 h-3.5 bg-[#e23744] ml-0.5 animate-pulse align-middle" />}
-          </p>
-        </div>
-        <ul className="space-y-1.5">
-          {reasons.map((r, i) => (
-            <motion.li key={r}
-              initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.3 + i * 0.1 }}
-              className="flex items-center gap-2 text-xs text-gray-600 font-medium">
-              <span className="w-4 h-4 rounded-full bg-[#e23744]/10 text-[#e23744] flex items-center justify-center text-[9px] font-black shrink-0">✓</span>
-              {r}
-            </motion.li>
-          ))}
-        </ul>
-        <Stars rating={winner.rating} />
-        {allItems?.length > 1 && <ComparisonBars item={winner} allItems={allItems} />}
-        <CartControl item={winner} restaurantSlug={slug} restaurantName={winner.restaurant} />
-        <button onClick={() => router.push(`/restaurant/${slug}`)}
-          className="w-full flex items-center justify-center gap-1.5 text-xs font-semibold text-[#e23744] py-1 hover:underline">
-          View Full Menu <LuArrowRight size={12} />
-        </button>
+      <img
+        src={imageUrl}
+        alt={query}
+        className="w-full h-full object-cover"
+      />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+      <div className="absolute bottom-0 left-0 px-4 py-3">
+        <p className="font-black text-white text-[22px] capitalize leading-tight">{query}</p>
+        <p className="text-[12px] text-white/70 font-medium">Best places in Gondia</p>
       </div>
     </motion.div>
   )
 }
 
-// ── Restaurant card ───────────────────────────────────────────────────────────
-function RestaurantCard({ item, isWinner, index, allItems }) {
+// ── AI Verdict banner ─────────────────────────────────────────────────────────
+function VerdictBanner({ winner, query }) {
   const router = useRouter()
-  const slug   = item.slug || "dhaba-junction"
+  const slug   = winner.slug || "dhaba-junction"
+  const reason = [
+    winner.tags.includes("Most Ordered") && "Most ordered",
+    winner.tasteScore >= 4.3             && "Top taste score",
+    winner.tags.includes("Best Value")   && "Best value",
+    winner.pros[0],
+  ].filter(Boolean)[0] || "Best overall"
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 18 }}
+    <motion.button
+      initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.08 + 0.1, duration: 0.35, ease: "easeOut" }}
-      className={clsx(
-        "rounded-2xl border overflow-hidden bg-white",
-        isWinner ? "border-[#e23744]/25 shadow-md shadow-[#e23744]/8" : "border-gray-200 shadow-sm"
-      )}
+      transition={{ delay: 0.12, duration: 0.35 }}
+      onClick={() => router.push(`/restaurant/${slug}`)}
+      className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-left"
+      style={{ background: "linear-gradient(135deg, #e23744, #ff6b6b)" }}
     >
-      <div className="relative overflow-hidden cursor-pointer" style={{ height: 160 }}
-        onClick={() => router.push(`/restaurant/${slug}`)}>
-        <img src={item.image} alt={item.restaurant}
-          className="w-full h-full object-cover hover:scale-105 transition-transform duration-500" />
-        {isWinner && (
-          <div className="absolute top-2.5 left-2.5 flex items-center gap-1 bg-[#e23744] text-white text-[10px] font-black px-2 py-0.5 rounded-full">
-            <LuTrophy size={9} /> TOP PICK
-          </div>
-        )}
-        <div className="absolute bottom-2.5 right-2.5 bg-white/95 backdrop-blur-sm rounded-lg px-2.5 py-1 shadow-sm">
-          <p className="font-black text-[15px] text-gray-900 leading-none">₹{item.price}</p>
-          <p className="text-[10px] text-gray-400 leading-tight">{item.quantity}</p>
-        </div>
+      <div className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
+        <LuTrophy size={15} color="white" />
       </div>
-
-      <div className="px-4 pt-3 pb-3 space-y-2.5">
-        <div className="flex items-start justify-between gap-2">
-          <button onClick={() => router.push(`/restaurant/${slug}`)}
-            className="font-bold text-[15px] text-gray-900 leading-tight text-left hover:text-[#e23744] transition-colors">
-            {item.restaurant}
-          </button>
-          <div className="flex flex-wrap gap-1 shrink-0 mt-0.5">
-            {item.tags.slice(0, 2).map(t => <Badge key={t} label={t} />)}
-          </div>
-        </div>
-        <div className="flex items-center justify-between">
-          <Stars rating={item.rating} />
-          {item.pros.length > 0 && (
-            <span className="text-[10px] text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded-md font-semibold">
-              ✓ {item.pros[0]}
-            </span>
-          )}
-        </div>
-        <div className="flex flex-wrap gap-1">
-          {item.tasteTags.map(t => <TasteTag key={t} label={t} />)}
-        </div>
-        {allItems?.length > 1 && <ComparisonBars item={item} allItems={allItems} />}
-        <CartControl item={item} restaurantSlug={slug} restaurantName={item.restaurant} />
+      <div className="flex-1 min-w-0">
+        <p className="text-[10px] font-black text-white/70 uppercase tracking-widest">🏆 AI Verdict</p>
+        <p className="font-black text-[15px] text-white leading-tight">{winner.restaurant}</p>
+        <p className="text-[11px] text-white/80 font-medium">{reason} · ₹{winner.price} · {winner.quantity}</p>
       </div>
-
-      <InsightsAccordion insights={item.insights} cons={item.cons} />
-    </motion.div>
+      <LuArrowRight size={16} color="white" className="shrink-0 opacity-70" />
+    </motion.button>
   )
 }
 
-// ── Skeletons ─────────────────────────────────────────────────────────────────
-function Skeleton() {
+// ── Skeleton row ──────────────────────────────────────────────────────────────
+function SkeletonRow() {
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white overflow-hidden animate-pulse">
-      <div className="bg-gray-200" style={{ height: 160 }} />
-      <div className="px-4 py-3 space-y-2.5">
-        <div className="h-4 w-2/3 bg-gray-200 rounded-full" />
-        <div className="h-3 w-1/2 bg-gray-100 rounded-full" />
-        <div className="flex gap-1.5">
-          <div className="h-5 w-16 bg-gray-100 rounded-full" />
-          <div className="h-5 w-14 bg-gray-100 rounded-full" />
+    <div className="rounded-2xl border border-gray-200 bg-white animate-pulse px-4 py-3">
+      <div className="flex items-center gap-3">
+        <div className="w-7 h-7 rounded-full bg-gray-200 shrink-0" />
+        <div className="flex-1 space-y-1.5">
+          <div className="h-3.5 w-2/5 bg-gray-200 rounded-full" />
+          <div className="h-3 w-1/3 bg-gray-100 rounded-full" />
         </div>
-        <div className="h-14 bg-gray-100 rounded-2xl" />
+        <div className="text-right space-y-1">
+          <div className="h-4 w-10 bg-gray-200 rounded-full" />
+          <div className="h-3 w-8 bg-gray-100 rounded-full" />
+        </div>
       </div>
     </div>
   )
 }
 
-function VerdictSkeleton() {
-  return (
-    <div className="rounded-2xl border border-gray-200 overflow-hidden animate-pulse">
-      <div className="h-16 bg-gray-200" />
-      <div className="p-4 space-y-3">
-        <div className="h-40 bg-gray-100 rounded-xl" />
-        <div className="flex gap-1.5">
-          <div className="h-5 w-14 bg-gray-100 rounded-full" />
-          <div className="h-5 w-16 bg-gray-100 rounded-full" />
-        </div>
-        <div className="h-10 bg-gray-100 rounded-xl" />
-        <div className="h-14 bg-gray-100 rounded-2xl" />
-      </div>
-    </div>
-  )
-}
-
-// ── Find category match for a search string ───────────────────────────────────
+// ── Category match helper ─────────────────────────────────────────────────────
 function matchCategory(query) {
   const q = query.toLowerCase().trim()
   if (!q) return null
@@ -447,29 +322,14 @@ export default function RecommendedPage() {
 
   const [input,    setInput]    = useState("")
   const [thinking, setThinking] = useState(false)
-  // Progressive: render first card immediately, rest after short delay
-  const [visibleCount, setVisibleCount] = useState(1)
   const inputRef = useRef(null)
 
-  // Hydrate input from stored query on mount only
   useEffect(() => { if (storedQuery) setInput(storedQuery) }, [])
-
-  // When results arrive, show first card instantly then stagger the rest
-  useEffect(() => {
-    if (!storedResults?.results?.length) { setVisibleCount(1); return }
-    setVisibleCount(1)
-    const count = storedResults.results.length
-    for (let i = 2; i <= count; i++) {
-      setTimeout(() => setVisibleCount(i), i * 120)
-    }
-  }, [storedResults])
 
   const triggerSearch = (query) => {
     if (!query.trim()) return
     setThinking(true)
-    setVisibleCount(1)
     dispatch(setRecommendedState({ query, results: null, winner: null }))
-    // Simulated AI delay — data is local so this is purely UX
     setTimeout(() => {
       const res    = getResults(query)
       const picked = res?.results?.length ? pickWinner(res.results) : null
@@ -478,12 +338,9 @@ export default function RecommendedPage() {
     }, 900)
   }
 
-  // Tab click: active tab toggles OFF (resets) or activates a new tab
   const handleTabClick = (tab) => {
     if (storedActiveTab === tab.key) {
-      dispatch(clearRecommended())
-      setInput("")
-      setThinking(false)
+      dispatch(clearRecommended()); setInput(""); setThinking(false)
     } else {
       dispatch(setRecommendedState({ activeTab: tab.key }))
       setInput(tab.label)
@@ -491,14 +348,12 @@ export default function RecommendedPage() {
     }
   }
 
-  // Input change: auto-highlight matching category tab
   const handleInputChange = (val) => {
     setInput(val)
     const matched = matchCategory(val)
     dispatch(setRecommendedState({ activeTab: matched?.key ?? null }))
   }
 
-  // Search submit
   const handleSubmit = (e) => {
     e?.preventDefault()
     if (!input.trim()) return
@@ -507,11 +362,8 @@ export default function RecommendedPage() {
     triggerSearch(input.trim())
   }
 
-  // Clear everything — return to default state
   const handleClear = () => {
-    dispatch(clearRecommended())
-    setInput("")
-    setThinking(false)
+    dispatch(clearRecommended()); setInput(""); setThinking(false)
     inputRef.current?.focus()
   }
 
@@ -536,13 +388,10 @@ export default function RecommendedPage() {
               <p className="text-[10px] text-gray-400 mt-0.5">Smart picks, just for you</p>
             </div>
           </div>
-          {/* Reset button — only shows when there's active content */}
           <AnimatePresence>
             {hasContent && (
               <motion.button
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.8 }}
+                initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.8 }}
                 onClick={handleClear}
                 className="flex items-center gap-1 text-xs font-semibold text-gray-500 bg-gray-100 hover:bg-gray-200 px-2.5 py-1.5 rounded-full transition-colors"
               >
@@ -553,8 +402,7 @@ export default function RecommendedPage() {
         </div>
 
         {/* Search bar */}
-        <form onSubmit={handleSubmit}
-          className="flex items-center gap-2 bg-gray-100 rounded-xl px-3.5 py-2.5">
+        <form onSubmit={handleSubmit} className="flex items-center gap-2 bg-gray-100 rounded-xl px-3.5 py-2.5">
           <LuSparkles size={15} className="text-[#e23744] shrink-0" />
           <input
             ref={inputRef}
@@ -575,7 +423,7 @@ export default function RecommendedPage() {
           </motion.button>
         </form>
 
-        {/* Category tabs — click active tab to DESELECT */}
+        {/* Category tabs */}
         <div className="flex gap-2 overflow-x-auto no-scrollbar">
           {CATEGORIES.map(tab => (
             <motion.button key={tab.key} whileTap={{ scale: 0.92 }}
@@ -587,19 +435,16 @@ export default function RecommendedPage() {
                   : "bg-white text-gray-600 border-gray-200"
               )}>
               <span>{tab.icon}</span>{tab.label}
-              {/* Show × on active tab to signal it can be deselected */}
-              {activeTab === tab.key && (
-                <LuX size={10} className="ml-0.5 opacity-80" />
-              )}
+              {activeTab === tab.key && <LuX size={10} className="ml-0.5 opacity-80" />}
             </motion.button>
           ))}
         </div>
       </div>
 
       {/* ── Content ── */}
-      <div className="px-4 pt-5 pb-28 space-y-4">
+      <div className="px-4 pt-5 pb-28 space-y-3">
 
-        {/* Default state: no query active */}
+        {/* Default state */}
         {!hasContent && (
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
             className="text-center py-14 space-y-4">
@@ -611,7 +456,7 @@ export default function RecommendedPage() {
             <div>
               <p className="font-bold text-gray-800 text-[15px]">Ask me what to order</p>
               <p className="text-sm text-gray-400 mt-1.5 max-w-[260px] mx-auto leading-relaxed">
-                Type a dish or pick a category — I'll compare every restaurant and give you one clear answer.
+                Type a dish or pick a category — I'll find the best spots and rank them for you.
               </p>
             </div>
             <div className="flex flex-wrap gap-2 justify-center pt-1">
@@ -626,20 +471,17 @@ export default function RecommendedPage() {
           </motion.div>
         )}
 
-        {/* Thinking skeletons */}
+        {/* Thinking */}
         <AnimatePresence>
           {thinking && (
-            <motion.div key="thinking"
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              className="space-y-4">
+            <motion.div key="thinking" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="space-y-3">
               <ThinkingDots />
-              <VerdictSkeleton />
-              <div className="flex items-center gap-3 py-1">
-                <div className="flex-1 h-px bg-gray-200" />
-                <span className="text-[11px] text-gray-400 font-semibold uppercase tracking-wide">All Options</span>
-                <div className="flex-1 h-px bg-gray-200" />
-              </div>
-              <Skeleton /><Skeleton />
+              {/* Hero skeleton */}
+              <div className="rounded-2xl bg-gray-200 animate-pulse" style={{ height: 180 }} />
+              {/* Verdict skeleton */}
+              <div className="rounded-2xl bg-gray-200 animate-pulse" style={{ height: 64 }} />
+              <SkeletonRow /><SkeletonRow /><SkeletonRow />
             </motion.div>
           )}
         </AnimatePresence>
@@ -647,12 +489,12 @@ export default function RecommendedPage() {
         {/* Results */}
         <AnimatePresence>
           {!thinking && results && (
-            <motion.div key="results" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
+            <motion.div key="results" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-3">
               {results.results.length === 0 ? (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
                   className="text-center py-14 space-y-3">
                   <p className="text-4xl">🤔</p>
-                  <p className="font-bold text-gray-700">No results for "{currentQuery}"</p>
+                  <p className="font-bold text-gray-700">No results for &ldquo;{currentQuery}&rdquo;</p>
                   <p className="text-sm text-gray-400">Try: idli · paneer · biryani · dosa · pizza</p>
                   <button onClick={handleClear}
                     className="mt-2 text-sm font-semibold text-[#e23744] underline underline-offset-2">
@@ -661,36 +503,38 @@ export default function RecommendedPage() {
                 </motion.div>
               ) : (
                 <>
-                  {/* AI Verdict — always rendered first (no progressive delay) */}
-                  {winner && <AIVerdict winner={winner} query={currentQuery} allItems={results.results} />}
+                  {/* Dish hero image */}
+                  <DishHero
+                    query={currentQuery}
+                    imageUrl={winner?.image || results.results[0]?.image}
+                  />
 
-                  <div className="flex items-center gap-3 pt-1">
+                  {/* AI verdict banner */}
+                  {winner && <VerdictBanner winner={winner} query={currentQuery} />}
+
+                  {/* Divider */}
+                  <div className="flex items-center gap-3 py-1">
                     <div className="flex-1 h-px bg-gray-200" />
-                    <span className="text-[11px] text-gray-400 font-semibold uppercase tracking-wide">
-                      All {results.results.length} Options
+                    <span className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">
+                      {results.results.length} options compared
                     </span>
                     <div className="flex-1 h-px bg-gray-200" />
                   </div>
 
-                  {/* Progressive rendering: first card instant, rest staggered */}
-                  {results.results.slice(0, visibleCount).map((item, i) => (
-                    <RestaurantCard
-                      key={item.restaurant + i}
-                      item={item}
-                      isWinner={winner?.restaurant === item.restaurant && winner?.price === item.price}
-                      index={i}
-                      allItems={results.results}
-                    />
+                  {/* Expandable rows */}
+                  {results.results.map((item, i) => (
+                    <motion.div key={item.restaurant + i}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: i * 0.07, duration: 0.3 }}>
+                      <RestaurantRow
+                        item={item}
+                        rank={i + 1}
+                        isWinner={winner?.restaurant === item.restaurant && winner?.price === item.price}
+                        allItems={results.results}
+                      />
+                    </motion.div>
                   ))}
-
-                  {/* Skeleton placeholder while remaining cards load in */}
-                  {visibleCount < results.results.length && (
-                    <div className="space-y-4">
-                      {Array.from({ length: results.results.length - visibleCount }).map((_, i) => (
-                        <Skeleton key={i} />
-                      ))}
-                    </div>
-                  )}
                 </>
               )}
             </motion.div>
