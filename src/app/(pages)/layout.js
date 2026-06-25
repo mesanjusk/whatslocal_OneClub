@@ -8,12 +8,14 @@ import Header from "@/components/shared/Header"
 import BottomNav from "@/components/shared/BottomNav"
 import TrackVisitor from "@/components/utils/TrackVisitor"
 import StoreProvider from "./StoreProvider"
+import SplashScreen from "@/components/SplashScreen"
 import { ToastContainer } from "react-toastify"
 
 
 export default function PagesLayout({ children }) {
   return (
     <StoreProvider>
+      <SplashScreen />
       <Header />
       <div className="pb-24">{children}</div>
       <BottomNav />
