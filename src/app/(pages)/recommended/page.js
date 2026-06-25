@@ -83,21 +83,20 @@ function CartControl({ item, restaurantSlug, restaurantName }) {
 
   if (qty > 0) {
     return (
-      <div className="flex items-center rounded-xl overflow-hidden border-2 border-[#e23744]"
-        style={{ height: 40 }} onClick={e => e.stopPropagation()}>
+      <div className="inline-flex items-center rounded-xl overflow-hidden border-2 border-[#e23744]"
+        style={{ height: 32 }} onClick={e => e.stopPropagation()}>
         <button onClick={handleRemove}
           className="flex items-center justify-center bg-[#e23744] text-white"
-          style={{ width: 40, height: "100%" }}>
-          <LuMinus size={15} strokeWidth={2.5} />
+          style={{ width: 32, height: "100%" }}>
+          <LuMinus size={12} strokeWidth={2.5} />
         </button>
-        <div className="flex-1 flex flex-col items-center justify-center bg-white">
-          <span className="font-black text-[16px] text-[#e23744] leading-none">{qty}</span>
-          <span className="text-[9px] text-gray-400 font-medium">in cart</span>
+        <div className="px-3 flex items-center justify-center bg-white">
+          <span className="font-black text-[14px] text-[#e23744] leading-none">{qty}</span>
         </div>
         <button onClick={handleAdd}
           className="flex items-center justify-center bg-[#e23744] text-white"
-          style={{ width: 40, height: "100%" }}>
-          <LuPlus size={15} strokeWidth={2.5} />
+          style={{ width: 32, height: "100%" }}>
+          <LuPlus size={12} strokeWidth={2.5} />
         </button>
       </div>
     )
@@ -106,12 +105,12 @@ function CartControl({ item, restaurantSlug, restaurantName }) {
   return (
     <motion.button whileTap={{ scale: 0.96 }} onClick={handleAdd}
       className={clsx(
-        "flex items-center justify-center gap-1.5 rounded-xl font-bold text-[13px] px-4 transition-all",
+        "inline-flex items-center gap-1.5 rounded-xl font-bold text-[12px] px-3 transition-all",
         flashed
           ? "bg-emerald-500 text-white"
           : "bg-[#e23744] text-white shadow-sm shadow-[#e23744]/30"
       )}
-      style={{ height: 40, minWidth: 130 }}>
+      style={{ height: 32 }}>
       <AnimatePresence mode="wait">
         {flashed ? (
           <motion.span key="done" initial={{ scale: 0.7, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
@@ -161,9 +160,12 @@ function RestaurantRow({ item, rank, isWinner, allItems }) {
         {/* Name + stars + keywords */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="font-bold text-[14px] text-gray-900 leading-tight truncate">
+            <button
+              onClick={e => { e.stopPropagation(); router.push(`/restaurant/${slug}`) }}
+              className="font-bold text-[14px] text-gray-900 leading-tight truncate hover:text-[#e23744] transition-colors text-left"
+            >
               {item.restaurant}
-            </span>
+            </button>
             {isWinner && (
               <span className="text-[9px] font-black px-1.5 py-0.5 rounded-full bg-[#e23744] text-white shrink-0">
                 TOP PICK
@@ -191,15 +193,9 @@ function RestaurantRow({ item, rank, isWinner, allItems }) {
         </div>
       </button>
 
-      {/* Cart + View Menu — always visible */}
-      <div className="flex items-center gap-2 px-4 pb-3" onClick={e => e.stopPropagation()}>
+      {/* Cart — always visible */}
+      <div className="px-4 pb-3" onClick={e => e.stopPropagation()}>
         <CartControl item={item} restaurantSlug={slug} restaurantName={item.restaurant} />
-        <button
-          onClick={() => router.push(`/restaurant/${slug}`)}
-          className="flex items-center gap-1 text-xs font-semibold text-[#e23744] px-3 py-2 rounded-xl border border-[#e23744]/30 bg-white hover:bg-[#fff5f5] transition-colors shrink-0"
-        >
-          View Menu <LuArrowRight size={11} />
-        </button>
       </div>
 
       {/* Expanded panel — insights only */}
