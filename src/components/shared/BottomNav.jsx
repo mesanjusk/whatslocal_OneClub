@@ -8,8 +8,8 @@ import { useAppSelector } from "@/lib/store/hooks"
 import { selectCartCount } from "@/lib/store/slices/cartSlice"
 
 const NAV_ITEMS = [
-  { label: "Home",        href: "/home",        icon: LuHouse },
   { label: "Recommended", href: "/recommended", icon: LuThumbsUp },
+  { label: "Explore",     href: "/home",        icon: LuHouse },
   { label: "Cart",        href: "/cart",        icon: LuShoppingCart, showBadge: true },
   { label: "History",     href: "/history",     icon: LuHistory },
 ]
