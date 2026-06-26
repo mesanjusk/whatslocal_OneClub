@@ -4,11 +4,11 @@ import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
 import {
-  LuArrowRight, LuSparkles, LuPlus, LuMinus, LuTrophy,
-  LuShoppingCart, LuCheck, LuX, LuChevronDown,
+  LuArrowRight, LuSparkles, LuPlus, LuMinus,
+  LuShoppingCart, LuCheck, LuX,
 } from "react-icons/lu"
 import { TiStarFullOutline } from "react-icons/ti"
-import { CATEGORIES, TASTE_ICONS, getResults, pickWinner } from "@/lib/aiData"
+import { CATEGORIES, getResults, pickWinner } from "@/lib/aiData"
 import { useAppDispatch, useAppSelector } from "@/lib/store/hooks"
 import { addItem, removeItem, selectItemQty } from "@/lib/store/slices/cartSlice"
 import {
@@ -19,7 +19,7 @@ import {
 import clsx from "clsx"
 import CategoryMascot from "@/components/CategoryMascot"
 
-// ── Food grid items for default state ────────────────────────────────────────
+// ── Food grid for default (no tab) state ─────────────────────────────────────
 const FOOD_GRID = [
   { label: "Biryani",  query: "biryani",  image: "https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=600&q=80" },
   { label: "Paneer",   query: "paneer",   image: "https://images.unsplash.com/photo-1631452180519-c014fe946bc7?w=600&q=80" },
@@ -31,16 +31,39 @@ const FOOD_GRID = [
   { label: "Desserts", query: "desserts", image: "https://images.unsplash.com/photo-1601303516534-3b50cba4b08a?w=600&q=80" },
 ]
 
+// ── Tag colours ───────────────────────────────────────────────────────────────
+const TAG_STYLES = {
+  "Most Ordered":   "bg-orange-50 text-orange-600 border-orange-200",
+  "Best Value":     "bg-green-50  text-green-600  border-green-200",
+  "Best Quantity":  "bg-blue-50   text-blue-600   border-blue-200",
+  "Recommended":    "bg-purple-50 text-purple-600 border-purple-200",
+  "Top Rated":      "bg-yellow-50 text-yellow-600 border-yellow-200",
+  "Great Taste":    "bg-red-50    text-red-600    border-red-200",
+  "Budget Friendly":"bg-teal-50   text-teal-600   border-teal-200",
+  "Popular":        "bg-pink-50   text-pink-600   border-pink-200",
+}
+
 // ── Stars ─────────────────────────────────────────────────────────────────────
 function Stars({ rating, size = 11 }) {
   return (
     <span className="inline-flex items-center gap-0.5">
-      {[1, 2, 3, 4, 5].map(n => (
-        <TiStarFullOutline key={n} size={size}
-          className={n <= Math.round(rating) ? "text-yellow-400" : "text-gray-200"} />
-      ))}
-      <span className="text-[11px] font-bold text-gray-500 ml-1">{rating.toFixed(1)}</span>
+      <TiStarFullOutline size={14} className="text-yellow-400" />
+      <span className="text-[13px] font-bold text-gray-700 ml-0.5">{rating.toFixed(1)}</span>
     </span>
+  )
+}
+
+// ── Progress bar ──────────────────────────────────────────────────────────────
+function Bar({ pct, color }) {
+  return (
+    <div className="h-[7px] bg-gray-100 rounded-full overflow-hidden flex-1">
+      <motion.div
+        initial={{ width: 0 }}
+        animate={{ width: `${pct}%` }}
+        transition={{ duration: 0.7, ease: "easeOut" }}
+        className={`h-full rounded-full ${color}`}
+      />
+    </div>
   )
 }
 
@@ -85,33 +108,37 @@ function CartControl({ item, restaurantSlug, restaurantName }) {
   if (qty > 0) {
     return (
       <div className="inline-flex items-center rounded-xl overflow-hidden border-2 border-[#e23744]"
-        style={{ height: 32 }} onClick={e => e.stopPropagation()}>
+        style={{ height: 40 }} onClick={e => e.stopPropagation()}>
         <button onClick={handleRemove}
           className="flex items-center justify-center bg-[#e23744] text-white"
-          style={{ width: 32, height: "100%" }}>
-          <LuMinus size={12} strokeWidth={2.5} />
+          style={{ width: 40, height: "100%" }}>
+          <LuMinus size={14} strokeWidth={2.5} />
         </button>
-        <div className="px-3 flex items-center justify-center bg-white">
-          <span className="font-black text-[14px] text-[#e23744] leading-none">{qty}</span>
+        <div className="px-4 flex items-center justify-center bg-white">
+          <span className="font-black text-[15px] text-[#e23744] leading-none">{qty}</span>
         </div>
         <button onClick={handleAdd}
           className="flex items-center justify-center bg-[#e23744] text-white"
-          style={{ width: 32, height: "100%" }}>
-          <LuPlus size={12} strokeWidth={2.5} />
+          style={{ width: 40, height: "100%" }}>
+          <LuPlus size={14} strokeWidth={2.5} />
         </button>
       </div>
     )
   }
 
   return (
-    <motion.button whileTap={{ scale: 0.96 }} onClick={handleAdd}
+    <motion.button
+      whileHover={{ scale: 1.03 }}
+      whileTap={{ scale: 0.95 }}
+      onClick={handleAdd}
       className={clsx(
-        "inline-flex items-center gap-1.5 rounded-lg font-semibold text-[11px] px-2.5 transition-all border",
+        "flex items-center gap-2 rounded-xl font-bold text-[13px] px-4 transition-all shadow-sm",
         flashed
-          ? "bg-emerald-50 text-emerald-600 border-emerald-200"
-          : "bg-white text-[#e23744] border-[#e23744]/40 hover:bg-[#fff5f5]"
+          ? "bg-emerald-500 text-white shadow-emerald-200"
+          : "bg-[#e23744] text-white shadow-[#e23744]/25"
       )}
-      style={{ height: 28 }}>
+      style={{ height: 40 }}
+    >
       <AnimatePresence mode="wait">
         {flashed ? (
           <motion.span key="done" initial={{ scale: 0.7, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
@@ -121,7 +148,7 @@ function CartControl({ item, restaurantSlug, restaurantName }) {
         ) : (
           <motion.span key="add" initial={{ opacity: 0 }} animate={{ opacity: 1 }}
             className="flex items-center gap-1.5">
-            <LuShoppingCart size={14} /> Add to Cart
+            <LuShoppingCart size={15} /> Add to Cart
           </motion.span>
         )}
       </AnimatePresence>
@@ -129,95 +156,138 @@ function CartControl({ item, restaurantSlug, restaurantName }) {
   )
 }
 
-// ── Expandable restaurant row ─────────────────────────────────────────────────
-function RestaurantRow({ item, rank, isWinner, allItems }) {
+// ── Restaurant card (new design) ──────────────────────────────────────────────
+function RestaurantCard({ item, rank, isWinner, allItems }) {
   const router  = useRouter()
   const [open, setOpen] = useState(false)
   const slug    = item.slug || "dhaba-junction"
 
-  const keywords = [
-    ...item.tasteTags.slice(0, 2),
-    item.tags[0],
-  ].filter(Boolean)
+  // Normalize progress bars within result set
+  const allPrices = allItems.map(i => i.price)
+  const maxPrice  = Math.max(...allPrices)
+  const minPrice  = Math.min(...allPrices)
+  const pricePct  = maxPrice === minPrice ? 60
+    : Math.round(((maxPrice - item.price) / (maxPrice - minPrice)) * 65 + 25)
+
+  const tastePct = Math.round((item.tasteScore / 5) * 90)
+
+  const allQty = allItems.map(i => parseInt(i.quantity) || 1)
+  const maxQty = Math.max(...allQty)
+  const qtyNum = parseInt(item.quantity) || 1
+  const qtyPct = Math.round((qtyNum / maxQty) * 85 + 15)
 
   return (
-    <div className={clsx(
-      "rounded-2xl overflow-hidden border bg-white transition-all",
-      isWinner ? "border-[#e23744]/30 shadow-md shadow-[#e23744]/8" : "border-gray-200 hover:border-gray-300 hover:shadow-sm"
-    )}>
-      {/* Row header — always visible */}
-      <button
-        className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 transition-colors"
-        onClick={() => setOpen(o => !o)}
-      >
-        {/* Rank */}
-        <div className={clsx(
-          "w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-[11px] font-black",
-          isWinner ? "bg-[#e23744] text-white" : "bg-gray-100 text-gray-500"
-        )}>
-          {isWinner ? <LuTrophy size={12} /> : rank}
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: rank * 0.07, duration: 0.3 }}
+      className={clsx(
+        "rounded-2xl overflow-hidden border bg-white",
+        isWinner ? "border-[#e23744]/25 shadow-md shadow-[#e23744]/6" : "border-gray-200"
+      )}
+    >
+      {/* ── Top row: image + info + cart ── */}
+      <div className="flex items-stretch">
+        {/* Image */}
+        <div className="w-[88px] shrink-0 self-stretch">
+          <img
+            src={item.image}
+            alt={item.restaurant}
+            className="w-full h-full object-cover"
+            style={{ minHeight: 90 }}
+          />
         </div>
 
-        {/* Name + stars + keywords */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <button
-              onClick={e => { e.stopPropagation(); router.push(`/restaurant/${slug}`) }}
-              className="font-bold text-[14px] text-gray-900 leading-tight truncate hover:text-[#e23744] transition-colors text-left"
-            >
-              {item.restaurant}
-            </button>
-            {isWinner && (
-              <span className="text-[9px] font-black px-1.5 py-0.5 rounded-full bg-[#e23744] text-white shrink-0">
-                TOP PICK
-              </span>
-            )}
-          </div>
-          <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+        {/* Name + rating + tags */}
+        <div className="flex-1 min-w-0 px-3 pt-3 pb-2">
+          <button
+            onClick={() => router.push(`/restaurant/${slug}`)}
+            className="font-bold text-[14px] text-gray-900 hover:text-[#e23744] transition-colors text-left leading-tight w-full truncate block"
+          >
+            {item.restaurant}
+          </button>
+          <div className="flex items-center gap-1.5 mt-0.5">
             <Stars rating={item.rating} />
-            <span className="text-[11px] text-gray-400">·</span>
-            {keywords.map((k, i) => (
-              <span key={i} className="text-[10px] text-gray-500 font-medium">{k}</span>
+          </div>
+          {/* Tags */}
+          <div className="flex gap-1.5 mt-1.5 flex-wrap">
+            {item.tags.slice(0, 2).map((tag, i) => (
+              <span
+                key={i}
+                className={clsx(
+                  "text-[10px] font-semibold px-2 py-0.5 rounded-full border",
+                  TAG_STYLES[tag] || "bg-gray-50 text-gray-500 border-gray-200"
+                )}
+              >
+                ● {tag}
+              </span>
             ))}
           </div>
         </div>
 
-        {/* Price + chevron */}
-        <div className="flex items-center gap-2 shrink-0">
+        {/* Price + Add to Cart */}
+        <div className="flex flex-col items-end justify-between px-3 pt-3 pb-2 shrink-0">
           <div className="text-right">
-            <p className="font-black text-[15px] text-gray-900 leading-none">₹{item.price}</p>
-            <p className="text-[10px] text-gray-400">{item.quantity}</p>
+            <p className="font-black text-[17px] text-gray-900 leading-none">₹{item.price}</p>
+            <p className="text-[10px] text-gray-400 mt-0.5">{item.quantity}</p>
           </div>
-          <motion.div animate={{ rotate: open ? 180 : 0 }} transition={{ duration: 0.22 }}>
-            <LuChevronDown size={16} className="text-gray-400" />
-          </motion.div>
+          <CartControl item={item} restaurantSlug={slug} restaurantName={item.restaurant} />
         </div>
-      </button>
-
-      {/* Cart — always visible */}
-      <div className="px-4 pb-3" onClick={e => e.stopPropagation()}>
-        <CartControl item={item} restaurantSlug={slug} restaurantName={item.restaurant} />
       </div>
 
-      {/* Expanded panel — insights only */}
+      {/* ── AI Taste Insights toggle ── */}
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="w-full flex items-center gap-2 px-4 py-2.5 border-t border-gray-100 text-left hover:bg-gray-50/80 transition-colors"
+      >
+        <LuSparkles size={12} className="text-[#e23744] shrink-0" />
+        <span className="text-[11px] font-bold text-gray-600">AI Taste Insights</span>
+        <motion.span
+          animate={{ rotate: open ? 45 : 0 }}
+          transition={{ duration: 0.2 }}
+          className="text-[#e23744] font-bold text-[16px] leading-none"
+        >
+          +
+        </motion.span>
+      </button>
+
+      {/* ── Expanded: progress bars + insights ── */}
       <AnimatePresence initial={false}>
         {open && (
-          <motion.div key="panel"
+          <motion.div
+            key="insights"
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.26, ease: [0.4, 0, 0.2, 1] }}
             className="overflow-hidden"
           >
-            <div className="border-t border-gray-100 px-4 py-3 space-y-1.5 bg-gray-50/50">
-              {item.insights.slice(0, 3).map((ins, i) => (
-                <div key={i} className="flex items-start gap-2 text-[12px] text-gray-600 leading-relaxed">
+            <div className="px-4 pb-4 pt-2 bg-gray-50/40 border-t border-gray-100 space-y-3">
+              {/* Progress bars */}
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2 flex-1">
+                  <span className="text-[10px] font-semibold text-gray-400 shrink-0 w-12">Price</span>
+                  <Bar pct={pricePct} color="bg-green-400" />
+                </div>
+                <div className="flex items-center gap-2 flex-1">
+                  <span className="text-[10px] font-semibold text-gray-400 shrink-0 w-8">Taste</span>
+                  <Bar pct={tastePct} color="bg-orange-400" />
+                </div>
+                <div className="flex items-center gap-2 flex-1">
+                  <span className="text-[10px] font-semibold text-gray-400 shrink-0 w-12">Quantity</span>
+                  <Bar pct={qtyPct} color="bg-blue-400" />
+                </div>
+              </div>
+
+              {/* Insights */}
+              {item.insights.slice(0, 2).map((ins, i) => (
+                <div key={i} className="flex items-start gap-2 text-[11px] text-gray-600 leading-relaxed">
                   <span className="text-[#e23744] font-black mt-0.5 shrink-0">›</span>
                   {ins}
                 </div>
               ))}
               {item.cons?.[0] && (
-                <div className="flex items-start gap-2 text-[11px] text-gray-400 border-t border-gray-200 pt-1.5">
+                <div className="flex items-start gap-2 text-[10px] text-gray-400">
                   <span className="shrink-0 mt-0.5">⚠</span> {item.cons[0]}
                 </div>
               )}
@@ -225,82 +295,31 @@ function RestaurantRow({ item, rank, isWinner, allItems }) {
           </motion.div>
         )}
       </AnimatePresence>
-    </div>
-  )
-}
-
-// ── Dish hero image ───────────────────────────────────────────────────────────
-function DishHero({ query, imageUrl }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: -10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, ease: "easeOut" }}
-      className="rounded-2xl overflow-hidden relative"
-      style={{ height: 180 }}
-    >
-      <img
-        src={imageUrl}
-        alt={query}
-        className="w-full h-full object-cover"
-      />
-      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-      <div className="absolute bottom-0 left-0 px-4 py-3">
-        <p className="font-black text-white text-[22px] capitalize leading-tight">{query}</p>
-        <p className="text-[12px] text-white/70 font-medium">Best places in Gondia</p>
-      </div>
     </motion.div>
   )
 }
 
-// ── AI Verdict banner ─────────────────────────────────────────────────────────
-function VerdictBanner({ winner, query }) {
-  const router = useRouter()
-  const slug   = winner.slug || "dhaba-junction"
-  const reason = [
-    winner.tags.includes("Most Ordered") && "Most ordered",
-    winner.tasteScore >= 4.3             && "Top taste score",
-    winner.tags.includes("Best Value")   && "Best value",
-    winner.pros[0],
-  ].filter(Boolean)[0] || "Best overall"
-
+// ── Skeleton card ─────────────────────────────────────────────────────────────
+function SkeletonCard() {
   return (
-    <motion.button
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.12, duration: 0.35 }}
-      whileHover={{ scale: 1.01 }}
-      onClick={() => router.push(`/restaurant/${slug}`)}
-      className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-left"
-      style={{ background: "linear-gradient(135deg, #e23744, #ff6b6b)" }}
-    >
-      <div className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
-        <LuTrophy size={15} color="white" />
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="text-[10px] font-black text-white/70 uppercase tracking-widest">🏆 AI Verdict</p>
-        <p className="font-black text-[15px] text-white leading-tight">{winner.restaurant}</p>
-        <p className="text-[11px] text-white/80 font-medium">{reason} · ₹{winner.price} · {winner.quantity}</p>
-      </div>
-      <LuArrowRight size={16} color="white" className="shrink-0 opacity-70" />
-    </motion.button>
-  )
-}
-
-// ── Skeleton row ──────────────────────────────────────────────────────────────
-function SkeletonRow() {
-  return (
-    <div className="rounded-2xl border border-gray-200 bg-white animate-pulse px-4 py-3">
-      <div className="flex items-center gap-3">
-        <div className="w-7 h-7 rounded-full bg-gray-200 shrink-0" />
-        <div className="flex-1 space-y-1.5">
-          <div className="h-3.5 w-2/5 bg-gray-200 rounded-full" />
+    <div className="rounded-2xl border border-gray-200 bg-white overflow-hidden animate-pulse">
+      <div className="flex items-stretch">
+        <div className="w-[88px] h-[90px] bg-gray-200 shrink-0" />
+        <div className="flex-1 px-3 pt-3 pb-2 space-y-2">
+          <div className="h-4 w-2/3 bg-gray-200 rounded-full" />
           <div className="h-3 w-1/3 bg-gray-100 rounded-full" />
+          <div className="flex gap-1.5">
+            <div className="h-4 w-20 bg-gray-100 rounded-full" />
+            <div className="h-4 w-16 bg-gray-100 rounded-full" />
+          </div>
         </div>
-        <div className="text-right space-y-1">
-          <div className="h-4 w-10 bg-gray-200 rounded-full" />
-          <div className="h-3 w-8 bg-gray-100 rounded-full" />
+        <div className="px-3 pt-3 pb-2 flex flex-col items-end gap-3">
+          <div className="h-5 w-12 bg-gray-200 rounded-full" />
+          <div className="h-10 w-24 bg-gray-200 rounded-xl" />
         </div>
+      </div>
+      <div className="px-4 py-2.5 border-t border-gray-100">
+        <div className="h-3 w-32 bg-gray-100 rounded-full" />
       </div>
     </div>
   )
@@ -311,10 +330,7 @@ function matchCategory(query) {
   const q = query.toLowerCase().trim()
   if (!q) return null
   return CATEGORIES.find(c =>
-    c.key === q ||
-    c.label.toLowerCase() === q ||
-    c.key.includes(q) ||
-    q.includes(c.key)
+    c.key === q || c.label.toLowerCase() === q || c.key.includes(q) || q.includes(c.key)
   ) ?? null
 }
 
@@ -350,9 +366,8 @@ export default function RecommendedPage() {
     if (storedActiveTab === tab.key) {
       dispatch(clearRecommended()); setInput(""); setThinking(false); setMascotMode(false)
     } else if (tab.key === "south indian") {
-      dispatch(setRecommendedState({ activeTab: tab.key }))
-      setInput(tab.label)
-      setMascotMode(true)
+      dispatch(setRecommendedState({ activeTab: tab.key, results: null, winner: null, query: "" }))
+      setInput(tab.label); setMascotMode(true); setThinking(false)
     } else {
       setMascotMode(false)
       dispatch(setRecommendedState({ activeTab: tab.key }))
@@ -365,6 +380,7 @@ export default function RecommendedPage() {
     setInput(val)
     const matched = matchCategory(val)
     dispatch(setRecommendedState({ activeTab: matched?.key ?? null }))
+    if (matched?.key !== "south indian") setMascotMode(false)
   }
 
   const handleSubmit = (e) => {
@@ -372,7 +388,12 @@ export default function RecommendedPage() {
     if (!input.trim()) return
     const matched = matchCategory(input)
     dispatch(setRecommendedState({ activeTab: matched?.key ?? null }))
-    triggerSearch(input.trim())
+    if (matched?.key === "south indian") {
+      setMascotMode(true)
+    } else {
+      setMascotMode(false)
+      triggerSearch(input.trim())
+    }
   }
 
   const handleClear = () => {
@@ -455,13 +476,16 @@ export default function RecommendedPage() {
       </div>
 
       {/* ── Content ── */}
-      <div className="px-4 pt-5 pb-28 space-y-3">
+      <div className="px-4 pt-5 pb-28 space-y-4">
 
         {/* Default state: food grid */}
         {!hasContent && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}
             className="space-y-3">
-            <p className="font-bold text-gray-800 text-[15px]">What are you feeling today?</p>
+            <div className="space-y-0.5">
+              <p className="font-bold text-gray-800 text-[15px]">What are you feeling today?</p>
+              <p className="text-[12px] text-gray-400">Tell us what you&apos;re craving, we&apos;ll recommend the best for you!</p>
+            </div>
             <div className="grid grid-cols-2 gap-3">
               {FOOD_GRID.map((item, i) => (
                 <motion.button
@@ -475,8 +499,7 @@ export default function RecommendedPage() {
                   className="relative rounded-2xl overflow-hidden text-left"
                   style={{ height: 140 }}
                 >
-                  <img src={item.image} alt={item.label}
-                    className="w-full h-full object-cover" />
+                  <img src={item.image} alt={item.label} className="w-full h-full object-cover" />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
                   <div className="absolute bottom-0 left-0 px-3 py-2.5">
                     <p className="font-black text-white text-[15px] leading-tight capitalize">{item.label}</p>
@@ -487,33 +510,29 @@ export default function RecommendedPage() {
           </motion.div>
         )}
 
-        {/* South Indian mascot */}
+        {/* South Indian mascot — stays visible while South Indian tab is active */}
         <AnimatePresence>
-          {mascotMode && !thinking && !results && (
+          {mascotMode && (
             <motion.div key="mascot" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
               <CategoryMascot
                 categoryKey={activeTab}
                 onSelectFood={(key) => {
-                  setMascotMode(false)
                   setInput(key)
                   triggerSearch(key)
+                  // mascotMode stays true — results appear below the character
                 }}
               />
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* Thinking */}
+        {/* Thinking skeletons */}
         <AnimatePresence>
           {thinking && (
             <motion.div key="thinking" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               className="space-y-3">
               <ThinkingDots />
-              {/* Hero skeleton */}
-              <div className="rounded-2xl bg-gray-200 animate-pulse" style={{ height: 180 }} />
-              {/* Verdict skeleton */}
-              <div className="rounded-2xl bg-gray-200 animate-pulse" style={{ height: 64 }} />
-              <SkeletonRow /><SkeletonRow /><SkeletonRow />
+              <SkeletonCard /><SkeletonCard /><SkeletonCard />
             </motion.div>
           )}
         </AnimatePresence>
@@ -535,38 +554,35 @@ export default function RecommendedPage() {
                 </motion.div>
               ) : (
                 <>
-                  {/* Dish hero image */}
-                  <DishHero
-                    query={currentQuery}
-                    imageUrl={winner?.image || results.results[0]?.image}
-                  />
-
-                  {/* AI verdict banner */}
-                  {winner && <VerdictBanner winner={winner} query={currentQuery} />}
-
-                  {/* Divider */}
-                  <div className="flex items-center gap-3 py-1">
-                    <div className="flex-1 h-px bg-gray-200" />
-                    <span className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">
-                      {results.results.length} options compared
-                    </span>
-                    <div className="flex-1 h-px bg-gray-200" />
+                  {/* Section header */}
+                  <div className="flex items-center gap-2">
+                    <LuSparkles size={14} className="text-yellow-400" />
+                    <div>
+                      <p className="font-black text-[15px] text-gray-900">AI Recommended for You</p>
+                      <p className="text-[11px] text-gray-400">Based on taste, ratings &amp; popularity</p>
+                    </div>
                   </div>
 
-                  {/* Expandable rows */}
+                  {/* Cards */}
                   {results.results.map((item, i) => (
-                    <motion.div key={item.restaurant + i}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: i * 0.07, duration: 0.3 }}>
-                      <RestaurantRow
-                        item={item}
-                        rank={i + 1}
-                        isWinner={winner?.restaurant === item.restaurant && winner?.price === item.price}
-                        allItems={results.results}
-                      />
-                    </motion.div>
+                    <RestaurantCard
+                      key={item.restaurant + i}
+                      item={item}
+                      rank={i + 1}
+                      isWinner={winner?.restaurant === item.restaurant && winner?.price === item.price}
+                      allItems={results.results}
+                    />
                   ))}
+
+                  {/* Loading more indicator */}
+                  <div className="flex items-center justify-center gap-2 py-3 text-[12px] text-gray-400 font-medium">
+                    <motion.div
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 1.2, repeat: Infinity, ease: "linear" }}
+                      className="w-3.5 h-3.5 border-2 border-gray-200 border-t-[#e23744] rounded-full"
+                    />
+                    Loading more…
+                  </div>
                 </>
               )}
             </motion.div>

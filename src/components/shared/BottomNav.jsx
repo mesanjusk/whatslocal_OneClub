@@ -3,16 +3,15 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
-import { LuShoppingCart, LuHistory, LuThumbsUp, LuHouse, LuHeart } from "react-icons/lu"
+import { LuShoppingCart, LuHistory, LuHouse, LuStar } from "react-icons/lu"
 import { useAppSelector } from "@/lib/store/hooks"
 import { selectCartCount } from "@/lib/store/slices/cartSlice"
 
 const NAV_ITEMS = [
-  { label: "Picks",     href: "/recommended", icon: LuThumbsUp },
-  { label: "Explore",   href: "/home",        icon: LuHouse },
-  { label: "Cart",      href: "/cart",        icon: LuShoppingCart, showBadge: true },
-  { label: "Saved",     href: "/favourites",  icon: LuHeart },
-  { label: "History",   href: "/history",     icon: LuHistory },
+  { label: "Recommended", href: "/recommended", icon: LuStar },
+  { label: "Explore",     href: "/home",        icon: LuHouse },
+  { label: "Cart",        href: "/cart",        icon: LuShoppingCart, showBadge: true },
+  { label: "History",     href: "/history",     icon: LuHistory },
 ]
 
 export default function BottomNav() {
@@ -30,7 +29,7 @@ export default function BottomNav() {
         height: 70,
       }}
     >
-      <div className="grid grid-cols-5 h-full">
+      <div className="grid grid-cols-4 h-full">
         {NAV_ITEMS.map(({ label, href, icon: Icon, showBadge }) => {
           const active = pathname === href
           const count  = showBadge ? cartCount : 0
@@ -61,7 +60,7 @@ export default function BottomNav() {
                   transition={{ type: "spring", stiffness: 500, damping: 30 }}
                 >
                   <Icon
-                    size={20}
+                    size={22}
                     strokeWidth={active ? 2.4 : 1.7}
                     style={{ color: active ? "#e23744" : "#9ca3af", transition: "color 0.2s ease" }}
                   />
@@ -87,7 +86,7 @@ export default function BottomNav() {
               <motion.span
                 animate={{ color: active ? "#e23744" : "#9ca3af" }}
                 transition={{ duration: 0.2 }}
-                style={{ fontSize: 9, fontWeight: active ? 700 : 500, letterSpacing: "0.02em", lineHeight: 1 }}
+                style={{ fontSize: 10, fontWeight: active ? 700 : 500, letterSpacing: "0.02em", lineHeight: 1 }}
               >
                 {label}
               </motion.span>
