@@ -17,6 +17,7 @@ import {
   selectRecommendedWinner, selectRecommendedActiveTab,
 } from "@/lib/store/slices/recommendedSlice"
 import clsx from "clsx"
+import CategoryMascot from "@/components/CategoryMascot"
 
 // ── Food grid items for default state ────────────────────────────────────────
 const FOOD_GRID = [
@@ -326,8 +327,9 @@ export default function RecommendedPage() {
   const storedWinner    = useAppSelector(selectRecommendedWinner)
   const storedActiveTab = useAppSelector(selectRecommendedActiveTab)
 
-  const [input,    setInput]    = useState("")
-  const [thinking, setThinking] = useState(false)
+  const [input,      setInput]      = useState("")
+  const [thinking,   setThinking]   = useState(false)
+  const [mascotMode, setMascotMode] = useState(false)
   const inputRef = useRef(null)
 
   useEffect(() => { if (storedQuery) setInput(storedQuery) }, [])
@@ -346,8 +348,13 @@ export default function RecommendedPage() {
 
   const handleTabClick = (tab) => {
     if (storedActiveTab === tab.key) {
-      dispatch(clearRecommended()); setInput(""); setThinking(false)
+      dispatch(clearRecommended()); setInput(""); setThinking(false); setMascotMode(false)
+    } else if (tab.key === "south indian") {
+      dispatch(setRecommendedState({ activeTab: tab.key }))
+      setInput(tab.label)
+      setMascotMode(true)
     } else {
+      setMascotMode(false)
       dispatch(setRecommendedState({ activeTab: tab.key }))
       setInput(tab.label)
       triggerSearch(tab.key)
@@ -369,7 +376,7 @@ export default function RecommendedPage() {
   }
 
   const handleClear = () => {
-    dispatch(clearRecommended()); setInput(""); setThinking(false)
+    dispatch(clearRecommended()); setInput(""); setThinking(false); setMascotMode(false)
     inputRef.current?.focus()
   }
 
@@ -377,7 +384,7 @@ export default function RecommendedPage() {
   const winner       = storedWinner
   const activeTab    = storedActiveTab
   const currentQuery = storedQuery
-  const hasContent   = thinking || results
+  const hasContent   = thinking || results || mascotMode
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -479,6 +486,22 @@ export default function RecommendedPage() {
             </div>
           </motion.div>
         )}
+
+        {/* South Indian mascot */}
+        <AnimatePresence>
+          {mascotMode && !thinking && !results && (
+            <motion.div key="mascot" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+              <CategoryMascot
+                categoryKey={activeTab}
+                onSelectFood={(key) => {
+                  setMascotMode(false)
+                  setInput(key)
+                  triggerSearch(key)
+                }}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Thinking */}
         <AnimatePresence>
